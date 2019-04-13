@@ -1,0 +1,131 @@
+; TRABALHO 1 - ARQUITETURA DE COMPUTADORES 1
+; UNIVERSIDADE FEDERAL DO RIO GRANDE DO SUL
+;
+; Autor: Wellington Espindula (wmespindula@inf.ufrgs.br)
+; #: 00302367
+;
+; Resumo: O presente trabalho tem por objetivo implementar,
+; na máquina teórica Ramses, 
+;
+
+; VARIÁVEIS
+ORG 128		; VARIÁVEIS DO PROGRAMA (AUXILIARES)
+end_atl_vetor:	DB 0		; guarda o endereço do primeiro byte do elemento do vetor sendo percorrido
+aux_vetor_msb:	DB 0	
+aux_vetor_lsb:	DB 0
+aux_msb:	DB 0		; guarda resultado do registrador A para permurtar com o B
+aux_lsb:	DB 0		; guarda resultado do registrador B para permurtar com o A
+
+
+ORG 197		; DADOS DE ENTRADA E SAÍDA
+end_vetor:	DB 208		; Endereço do vetor de entrada
+resultado_msb:	DB 0		; Byte mais significativo do resultado
+resultado_lsb:	DB 0		; Byte menos significativo do resultado
+
+ORG 208
+x11:		DB 1
+x12:		DB 2
+x21:		DB 5
+x22:		DB 26
+x31:		DB 43
+x32:		DB 60
+x41:		DB 77
+x42:		DB 94
+x51:		DB 0
+x52:		DB 0
+
+; PROGRAMA
+ORG 0
+zera_variaveis:
+	LDR A #0
+	STR A aux_vetor_msb
+	STR A aux_vetor_lsb
+	STR A aux_msb
+	STR A aux_lsb
+
+inicio:
+inicializa_loop_percorre_vetor:
+	LDR X end_vetor
+	STR X end_atl_vetor
+
+loop_percorre_vetor:
+	LDR A 0,X
+	STR A aux_vetor_msb
+	LDR B 1,X
+	STR B aux_vetor_lsb
+	ADD A aux_vetor_lsb
+	JZ fim_do_loop_percorre_vetor
+	JSR subrotina_processamento
+
+verifica_loop:
+	LDR X end_atl_vetor
+	ADD X #2
+	STR X end_atl_vetor
+	JMP loop_percorre_vetor	
+	
+fim_do_loop_percorre_vetor:
+	LDR A resultado_msb
+	LDR B resultado_lsb
+	STR A aux_vetor_msb
+	STR B aux_vetor_lsb
+	LDR X #0
+	STR X resultado_msb
+	STR X resultado_lsb
+	JSR subrotina_processamento
+
+fim:
+	HLT
+
+
+; SUBROTINA QUE REALIZA AS OPERAÇÕES DE PROCESSAMENTO NOS ELEMENTOS DO VETOR
+subrotina_processamento:
+	NOP
+inicializa_loop_gira_byte:
+	LDR A aux_vetor_msb
+	LDR B aux_vetor_lsb
+	LDR X #4	
+
+loop_gira_byte:
+gira_byte_A:
+	SHR A
+	JC carry_A
+
+gira_byte_B:
+	SHR B
+	JC carry_B
+	JMP verifica_loop_gira_byte
+
+carry_A:
+	OR A #128
+	JMP gira_byte_B
+
+carry_B:	
+	OR B #128
+
+verifica_loop_gira_byte:
+	SUB X #1
+	JZ fim_do_loop_gira_byte
+	JMP loop_gira_byte
+
+fim_do_loop_gira_byte:
+inverte_A_B: 
+	STR A aux_msb
+	STR B aux_lsb
+	LDR A aux_lsb
+	LDR B aux_msb
+	
+soma_A_B:
+	ADD A resultado_msb
+	ADD B resultado_lsb
+	JC carry_soma_b
+	JMP salva_resultado_A_B
+
+carry_soma_b:
+	ADD A #1
+
+salva_resultado_A_B:
+	STR A resultado_msb
+	STR B resultado_lsb
+
+volta_subrotiina:
+	JMP subrotina_processamento,I
