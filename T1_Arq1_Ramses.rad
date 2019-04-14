@@ -4,16 +4,11 @@
 ; Autor: Wellington Espindula (wmespindula@inf.ufrgs.br)
 ; #: 00302367
 ;
-; Resumo: O presente trabalho tem por objetivo implementar,
-; na máquina teórica Ramses, um programa que processe um 
-; vetor contendo valores de 16 bits (2 bytes por elemento) e
-; forneça um resultado também em 16 bits. O processamento
-; dos dados consiste em: (i) Girar o primeiro e o segundo
-; byte do elemento para a direita em 4 bits; (ii) Permutar 
-; os valores do primeiro e do segundo byte; (iii) Somar o 
-; resultado obtido (com 16 bits) à variável que armazena 
-; o resultado. Por fim, o programa, usando o resultado do
-; processamento do vetor, faz as permutações (i) e (ii). 
+; Resumo: O presente trabalho tem por objetivo implementar, na máquina teórica Ramses, um programa que processe um 
+; vetor contendo valores de 16 bits (2 bytes por elemento) e forneça um resultado também em 16 bits. O processamento
+; dos dados consiste em: (i) Girar o primeiro e o segundo byte do elemento para a direita em 4 bits; (ii) Permutar 
+; os valores do primeiro e do segundo byte; (iii) Somar o resultado obtido (com 16 bits) à variável que armazena 
+; o resultado. Por fim, o programa, usando o resultado do processamento do vetor, faz as permutações (i) e (ii). 
 ;
 
 
@@ -43,13 +38,13 @@ inicializa_loop_percorre_vetor:		; Inicializa variáveis necessárias para o la�
 
 loop_percorre_vetor:			; Loop que percorre o vetor...
 	LDR A 0,X			; Carrega o primeiro byte do elemento do vetor no registrador A
-	OR A 1,X			; Soma o primeiro byte com o segundo byte do elemento do vetor
+	OR A 1,X			; Faz o primeiro byte ou o segundo byte do elemento do vetor
 	JZ fim_do_loop_percorre_vetor	; Caso a soma dê zero, indica que houve a soma 0 e 0 ou uma soma que resulte em carry
 	LDR A 0,X			; Carrega o primeiro byte do elemento do vetor no registrador A
 	LDR B 1,X			; Carrega o segundo byte do elemento do vetor no registrador B
 	JSR subrotina_processamento	; Processa os dados na subrotina...
 					; Como pode-se notar, os dados são passados para a subrotina por registradores (A e B)
-					; E o resultado da subrotina também são passados pelos registradores (A e B)
+					; E o resultado da subrotina também é passado pelos registradores (A e B)
 
 					; Volta da subrotina!!!
 
@@ -69,7 +64,7 @@ salva_resultado_A_B:			; Salva os resultados das somas nos endereços de memóri
 verifica_loop:				; Como os dados do elemento do vetor foram processados e salvos, então continua o laço
 	LDR X end_vetor			; Carrega no registrador X o endereço atual (index) do vetor 
 	ADD X #2			; Como são dois bytes para cada elemento, soma 2. Portanto, desloca o endereço para o próximo elemento do vetor
-	STR X end_vetor			; Salva no registrador X
+	STR X end_vetor			; Atualiza o registrador X
 	JMP loop_percorre_vetor		; Volta para a verificação do laço
 
 fim_do_loop_percorre_vetor:		; Caso tenha encontrado o elemento (0, 0), realiza as operações finais de processamento de dados no resultado já obtido e os salva
@@ -84,6 +79,11 @@ fim:					; Fim!!!
 
 
 ; SUBROTINA QUE REALIZA AS OPERAÇÕES DE PROCESSAMENTO NOS ELEMENTOS DO VETOR
+; Realiza as operações de:
+; 1 - Girar o registrador A para a direita em 4 bits
+; 2 - Girar o registrador B para a direita em 4 bits
+; 3 - Permutar os valores de A e B
+;
 subrotina_processamento:
 	NOP
 
@@ -119,4 +119,4 @@ inverte_A_B: 				; Permuta o resultado em A com o resultado em B
 	LDR B aux_msb			; Carrega em B o que estava em A
 
 volta_subrotina:			; Retorna...
-	JMP subrotina_processamento,I	; PC retorna para o endereço subsequente que chamou a subrotina
+	JMP subrotina_processamento,I	;
