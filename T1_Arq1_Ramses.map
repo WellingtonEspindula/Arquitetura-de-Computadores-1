@@ -1,0 +1,27 @@
+Símbolo         Valor Decimal   Valor Hexadecimal
+-------         -------------   -----------------
+AUX_MSB                   128                  80
+AUX_LSB                   129                  81
+END_VETOR                 197                  C5
+RESULTADO_MSB             198                  C6
+RESULTADO_LSB             199                  C7
+ZERA_VARIAVEIS              0                   0
+INICIO                     10                   A
+INICIALIZA_LOOP_PERCORRE_VETOR       10                   A
+LOOP_PERCORRE_VETOR        12                   C
+SOMA_A_B                   24                  18
+CARRY_SOMA_B               32                  20
+SALVA_RESULTADO_A_B        34                  22
+VERIFICA_LOOP              38                  26
+FIM_DO_LOOP_PERCORRE_VETOR       46                  2E
+FIM                        56                  38
+SUBROTINA_PROCESSAMENTO       57                  39
+INICIALIZA_LOOP_GIRA_BYTE       58                  3A
+LOOP_GIRA_BYTE             60                  3C
+GIRA_BYTE_A                60                  3C
+GIRA_BYTE_B                63                  3F
+CARRY_A                    68                  44
+CARRY_B                    72                  48
+VERIFICA_LOOP_GIRA_BYTE       74                  4A
+INVERTE_A_B                80                  50
+VOLTA_SUBROTINA            88                  58

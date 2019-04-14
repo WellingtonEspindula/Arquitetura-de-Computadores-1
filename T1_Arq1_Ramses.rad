@@ -4,82 +4,82 @@
 ; Autor: Wellington Espindula (wmespindula@inf.ufrgs.br)
 ; #: 00302367
 ;
-; Resumo: O presente trabalho tem por objetivo implementar, na m√°quina te√≥rica Ramses, um programa que processe um 
-; vetor contendo valores de 16 bits (2 bytes por elemento) e forne√ßa um resultado tamb√©m em 16 bits. O processamento
+; Resumo: O presente trabalho tem por objetivo implementar, na m·quina teÛrica Ramses, um programa que processe um 
+; vetor contendo valores de 16 bits (2 bytes por elemento) e forneÁa um resultado tambÈm em 16 bits. O processamento
 ; dos dados consiste em: (i) Girar o primeiro e o segundo byte do elemento para a direita em 4 bits; (ii) Permutar 
-; os valores do primeiro e do segundo byte; (iii) Somar o resultado obtido (com 16 bits) √† vari√°vel que armazena 
-; o resultado. Por fim, o programa, usando o resultado do processamento do vetor, faz as permuta√ß√µes (i) e (ii). 
+; os valores do primeiro e do segundo byte; (iii) Somar o resultado obtido (com 16 bits) ‡ vari·vel que armazena 
+; o resultado. Por fim, o programa, usando o resultado do processamento do vetor, faz as permutaÁıes (i) e (ii). 
 ;
 
 
-; VARI√ÅVEIS
-ORG 128		; VARI√ÅVEIS DO PROGRAMA (AUXILIARES)
+; VARI¡VEIS
+ORG 128					; VARI¡VEIS DO PROGRAMA (AUXILIARES)
 aux_msb:	DB 0			; guarda resultado do registrador A para permurtar com o B
 aux_lsb:	DB 0			; guarda resultado do registrador B para permurtar com o A
 
 
-ORG 197		; DADOS DE ENTRADA E SA√çDA
-end_vetor:	DB 0			; Endere√ßo do vetor de entrada
+ORG 197					; DADOS DE ENTRADA E SAÕDA
+end_vetor:	DB 0			; EndereÁo do vetor de entrada
 resultado_msb:	DB 0			; Byte mais significativo do resultado
 resultado_lsb:	DB 0			; Byte menos significativo do resultado
 
 ; PROGRAMA
 ORG 0
-zera_variaveis:				; Zera as vari√°veis auxiliares e resultado
+zera_variaveis:				; Zera as vari·veis auxiliares e resultado
 	LDR A #0			; Carrega 0 no registrador A
 	STR A aux_msb			; Zera...
 	STR A aux_lsb
 	STR A resultado_msb
 	STR A resultado_lsb
 	
-inicio:					; In√≠cio do programa em si
-inicializa_loop_percorre_vetor:		; Inicializa vari√°veis necess√°rias para o la√ßo que ir√° percorrer o vetor
-	LDR X end_vetor			; Copia o endere√ßo do in√≠cio do vetor para o registrador X
+inicio:					; InÌcio do programa em si
+inicializa_loop_percorre_vetor:		; Inicializa vari·veis necess·rias para o laÁo que ir· percorrer o vetor
+	LDR X end_vetor			; Copia o endereÁo do inÌcio do vetor para o registrador X
 
 loop_percorre_vetor:			; Loop que percorre o vetor...
 	LDR A 0,X			; Carrega o primeiro byte do elemento do vetor no registrador A
 	OR A 1,X			; Faz o primeiro byte ou o segundo byte do elemento do vetor
-	JZ fim_do_loop_percorre_vetor	; Caso a soma d√™ zero, indica que houve a soma 0 e 0 ou uma soma que resulte em carry
+	JZ fim_do_loop_percorre_vetor	; Caso a soma dÍ zero, indica que houve a soma 0 e 0 ou uma soma que resulte em carry
 	LDR A 0,X			; Carrega o primeiro byte do elemento do vetor no registrador A
 	LDR B 1,X			; Carrega o segundo byte do elemento do vetor no registrador B
 	JSR subrotina_processamento	; Processa os dados na subrotina...
-					; Como pode-se notar, os dados s√£o passados para a subrotina por registradores (A e B)
-					; E o resultado da subrotina tamb√©m √© passado pelos registradores (A e B)
+					; Como pode-se notar, os dados s„o passados para a subrotina por registradores (A e B)
+					; E o resultado da subrotina tambÈm È passado pelos registradores (A e B)
 
 					; Volta da subrotina!!!
 
-soma_A_B:				; Ap√≥s o processamento dos dados, com os registradores A e B atualizados, soma os resultados com os resultados anteriores
+soma_A_B:				; ApÛs o processamento dos dados, com os registradores A e B atualizados, soma os resultados com os resultados anteriores
 	ADD A resultado_msb		; Soma o registrador A com o byte mais significativo do resultado
 	ADD B resultado_lsb		; Soma o registrador B com o byte menos significativo do resultado
-	JC carry_soma_b			; Caso na soma dos bytes menos significativos d√™ carry, soma 1 em A
-	JMP salva_resultado_A_B		; Caso n√£o d√™ carry, salva os resultados das somas, realizados nos registradores, nos endere√ßos de mem√≥ria
+	JC carry_soma_b			; Caso na soma dos bytes menos significativos dÍ carry, soma 1 em A
+	JMP salva_resultado_A_B		; Caso n„o dÍ carry, salva os resultados das somas, realizados nos registradores, nos endereÁos de memÛria
 
 carry_soma_b:				; No caso de carry descrito acima, soma 1 no registrador A
 	ADD A #1			; Soma 1 no registrador A...
 
-salva_resultado_A_B:			; Salva os resultados das somas nos endere√ßos de mem√≥ria (sa√≠da)
-	STR A resultado_msb		; Salva o registrador A no endere√ßo de mem√≥ria do byte mais significativo do resultado
-	STR B resultado_lsb		; Salva o registrador B no endere√ßo de mem√≥ria do byte menos significativo do resultado
+salva_resultado_A_B:			; Salva os resultados das somas nos endereÁos de memÛria (saÌda)
+	STR A resultado_msb		; Salva o registrador A no endereÁo de memÛria do byte mais significativo do resultado
+	STR B resultado_lsb		; Salva o registrador B no endereÁo de memÛria do byte menos significativo do resultado
 
-verifica_loop:				; Como os dados do elemento do vetor foram processados e salvos, ent√£o continua o la√ßo
-	LDR X end_vetor			; Carrega no registrador X o endere√ßo atual (index) do vetor 
-	ADD X #2			; Como s√£o dois bytes para cada elemento, soma 2. Portanto, desloca o endere√ßo para o pr√≥ximo elemento do vetor
+verifica_loop:				; Como os dados do elemento do vetor foram processados e salvos, ent„o continua o laÁo
+	LDR X end_vetor			; Carrega no registrador X o endereÁo atual (index) do vetor 
+	ADD X #2			; Como s„o dois bytes para cada elemento, soma 2. Portanto, desloca o endereÁo para o prÛximo elemento do vetor
 	STR X end_vetor			; Atualiza o registrador X
-	JMP loop_percorre_vetor		; Volta para a verifica√ß√£o do la√ßo
+	JMP loop_percorre_vetor		; Volta para a verificaÁ„o do laÁo
 
-fim_do_loop_percorre_vetor:		; Caso tenha encontrado o elemento (0, 0), realiza as opera√ß√µes finais de processamento de dados no resultado j√° obtido e os salva
+fim_do_loop_percorre_vetor:		; Caso tenha encontrado o elemento (0, 0), realiza as operaÁıes finais de processamento de dados no resultado j· obtido e os salva
 	LDR A resultado_msb		; Carrega o byte mais significativo do resultado no registrador A
 	LDR B resultado_lsb		; Carrega o byte menos significativo do resultado no registrador B
 	JSR subrotina_processamento	; Processa os dados na subrotina...
-	STR A resultado_msb		; Salva os dados de sa√≠da da subrotina nos endere√ßos de resultado
+	STR A resultado_msb		; Salva os dados de saÌda da subrotina nos endereÁos de resultado
 	STR B resultado_lsb		
 
 fim:					; Fim!!!
 	HLT
 
 
-; SUBROTINA QUE REALIZA AS OPERA√á√ïES DE PROCESSAMENTO NOS ELEMENTOS DO VETOR
-; Realiza as opera√ß√µes de:
+; SUBROTINA QUE REALIZA AS OPERA«’ES DE PROCESSAMENTO NOS ELEMENTOS DO VETOR
+; Realiza as operaÁıes de:
 ; 1 - Girar o registrador A para a direita em 4 bits
 ; 2 - Girar o registrador B para a direita em 4 bits
 ; 3 - Permutar os valores de A e B
@@ -87,33 +87,33 @@ fim:					; Fim!!!
 subrotina_processamento:
 	NOP
 
-inicializa_loop_gira_byte:		; Inicializa dados necess√°rios para o loop que ir√° girar os bytes nos registradores A e B
-	LDR X #4			; Como o loop ir√° se repetir 4 vezes, carrega 4 no registrador X (registrador de √≠ndice).
+inicializa_loop_gira_byte:		; Inicializa dados necess·rios para o loop que ir· girar os bytes nos registradores A e B
+	LDR X #4			; Como o loop ir· se repetir 4 vezes, carrega 4 no registrador X (registrador de Ìndice).
 
-loop_gira_byte:				; Loop que ir√° girar os bytes A e B
+loop_gira_byte:				; Loop que ir· girar os bytes A e B
 gira_byte_A:				; Gira o byte no registrador A
 	SHR A				; Shifta o A para a direita
-	JC carry_A			; Caso d√™ carry, pula para o carry_A, que ir√° implementar a opera√ß√£o de rota√ß√£o
+	JC carry_A			; Caso dÍ carry, pula para o carry_A, que ir· implementar a operaÁ„o de rotaÁ„o
 
 gira_byte_B:				; Gira o byte no registrador B
 	SHR B				; Shifta o B para a direita
-	JC carry_B			; Caso d√™ carry, pula para o carry_B, que ir√° implementar a opera√ß√£o de rota√ß√£o
-	JMP verifica_loop_gira_byte	; Caso n√£o d√™ carry, pula para a verifica√ß√£o do la√ßo
+	JC carry_B			; Caso dÍ carry, pula para o carry_B, que ir· implementar a operaÁ„o de rotaÁ„o
+	JMP verifica_loop_gira_byte	; Caso n„o dÍ carry, pula para a verificaÁ„o do laÁo
 
-carry_A:				; Caso d√™ carry no shift para a direita, adiciona 1 ao bit mais significativo do byte
+carry_A:				; Caso dÍ carry no shift para a direita, adiciona 1 ao bit mais significativo do byte
 	OR A #128			; Adiciona 1 no bit mais significativo do byte em A
-	JMP gira_byte_B			; pula para a opera√ß√£o de girar o byte em B
+	JMP gira_byte_B			; pula para a operaÁ„o de girar o byte em B
 
-carry_B:				; Caso d√™ carry no shift para a direita, adiciona 1 ao bit mais significativo do byte
+carry_B:				; Caso dÍ carry no shift para a direita, adiciona 1 ao bit mais significativo do byte
 	OR B #128			; Adiciona 1 no bit mais significativo do byte em B
 
-verifica_loop_gira_byte:		; Verifica la√ßo
-	SUB X #1			; Subtrai 1 do √≠ndice (registrador X)
-	JZ fim_do_loop_gira_byte	; Caso tenha chegado a 0, ou seja, j√° tenha percorrido o la√ßo 4 vezes, pula para as opera√ß√µes subsequentes
-	JMP loop_gira_byte		; Caso n√£o tenha chegado a 0, continua o la√ßo...
+verifica_loop_gira_byte:		; Verifica laÁo
+	SUB X #1			; Subtrai 1 do Ìndice (registrador X)
+	JZ inverte_A_B			; Caso tenha chegado a 0, ou seja, j· tenha percorrido o laÁo 4 vezes, pula para as operaÁıes subsequentes
+	JMP loop_gira_byte		; Caso n„o tenha chegado a 0, continua o laÁo...
 
 inverte_A_B: 				; Permuta o resultado em A com o resultado em B
-	STR A aux_msb			; Utilizando um endere√ßo auxiliar, armazena o que est√° em A nesse registrador
+	STR A aux_msb			; Utilizando um endereÁo auxiliar, armazena o que est· em A nesse registrador
 	STR B aux_lsb			; Idem com B
 	LDR A aux_lsb			; Carrega em A o que estava em B
 	LDR B aux_msb			; Carrega em B o que estava em A
