@@ -22,7 +22,7 @@ palavra_atual:	dab 0
 
 org _WORDS
 esp_dois_pontos:dab ' : '
-nulo:		dab 0
+limpa_visor:	dab '                                    '	; visor em branco
 cursor:		dab '_'
 tab_seqs:	dab 'abcdefgh'		; índice 0
 		dab 'aaaaaaaa'		; índice 1 
@@ -81,10 +81,19 @@ puts:
 	MOV #0, R1			; começa a escrever na primeira posição do visor
 	JSR R7, _SISTEMA
 
-	MOV #putmsg, R5
-	MOV #esp_dois_pontos, R0
+	MOV esp_dois_pontos, R3
+	MOV #putchar, R5
+	MOV (R3), R0
 	MOV #8, R1
 	JSR R7, _SISTEMA
+	MOV #putchar, R5
+	MOV 1(R3), R0
+	INC R1
+	JSR R7, _SISTEMA
+	MOV #putchar, R5
+	MOV 2(R3), R0
+	INC R1
+	JSR R7, _SISTEMA	
 
 inicia_entrada:
 	
