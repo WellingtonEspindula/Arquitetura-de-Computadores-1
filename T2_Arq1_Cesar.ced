@@ -1,0 +1,153 @@
+; programa
+
+; Constantes com os codigos das funcoes do sistema (ver enunciado)
+kbhit:    equ 0
+getchar:  equ 1
+gettime:  equ 2
+putchar:  equ 3
+putmsg:   equ 4
+
+;------------------------------------------------------------------------------
+; Definição de endereços necessários para o desenvolvimento da aplicação
+;------------------------------------------------------------------------------
+_APP:		equ	h0100		; inicio da APP
+_SISTEMA:	equ	h0080		; area das syscall
+_VARS:		equ	h400		; variáveis da aplicação
+_WORDS:		equ	h500		; mensagens e tabela de palavras
+
+org _VARS
+posicao_cursor:	db 0
+num_carac_dig:	db 0	
+palavra_atual:	dab 0
+
+org _WORDS
+esp_dois_pontos:dab ' : '
+nulo:		dab 0
+cursor:		dab '_'
+tab_seqs:	dab 'abcdefgh'		; índice 0
+		dab 'aaaaaaaa'		; índice 1 
+		dab 'AAAAAAAA'		; índice 2 
+		dab 'bbbbbbbb'		; índice 3 
+		dab 'BBBBBBBB'		; índice 4 
+		dab 'cccccccc'		; índice 5 
+		dab 'CCCCCCCC'		; índice 6 
+		dab 'dddddddd'		; índice 7 
+		dab 'DDDDDDDD'		; índice 8 
+		dab 'eeeeeeee'		; índice 9 
+		dab 'EEEEEEEE'		; índice 10
+		dab 'ffffffff'		; índice 11
+		dab 'FFFFFFFF'		; índice 12
+		dab 'gggggggg'		; índice 13
+		dab 'GGGGGGGG'		; índice 14
+		dab 'hhhhhhhh'		; índice 15
+
+
+org _APP
+inicio:	
+	CLR R1
+	CLR R2
+	CLR R3
+	CLR R4
+	CLR R5
+
+;	MOV #kbhit, R5	; while (kbhit())
+;	JSR R7, _SISTEMA
+;	TST R0
+;	BEQ inicio
+
+
+palavra_aleatoria:
+	MOV #gettime, R5
+	JSR R7,_SISTEMA
+	AND #15, R0
+	ASL R0
+	ASL R0
+	ASL R0
+
+cp_palavra_transf:
+	MOV #4, R3	
+
+	ADD #tab_seqs, R0	
+	MOV #palavra_atual, R1
+
+
+loop_cp:
+	MOV (R0)+, (R1)+
+	SOB R3, loop_cp
+
+puts:	
+	MOV #putmsg, R5			; modo putmsg
+	MOV #palavra_atual, R0
+	MOV #0, R1			; começa a escrever na primeira posição do visor
+	JSR R7, _SISTEMA
+
+	MOV #putmsg, R5
+	MOV #esp_dois_pontos, R0
+	MOV #8, R1
+	JSR R7, _SISTEMA
+
+inicia_entrada:
+	
+houve_entrada:
+	MOV #kbhit, R5			; while (kbhit())
+	JSR R7, _SISTEMA
+	TST R0
+	BEQ houve_entrada
+
+trata_entrada:
+	MOV #getchar, R5		; r0 = getchar()
+	JSR R7, _SISTEMA
+	MOV R0, R1			; r1 = r0 (cópia de segurança)
+
+	; Verifica se o caractere digitado é alfanumérico
+
+comparacao_1:
+	MOV R1, R0
+	CMP #'0', R0			; r0 >= 48 (0)
+	BGT comparacao_2
+
+	MOV R1, R0
+	CMP #'9', R0			; r0 <= 57 (9)
+	BLT comparacao_2
+	
+	JMP impime_carac_dig
+	
+comparacao_2:
+	MOV R1, R0
+	CMP #'A', R0			; r0 >= 65 (A)
+	BGT comparacao_3
+
+	MOV R1, R0
+	CMP #'Z', R0			; r0 <= 90 (Z)
+	BLT comparacao_3
+
+	JMP impime_carac_dig
+	
+comparacao_3:
+	MOV R1, R0
+	CMP #'a', R0			; r0 >= 97 (a)
+	BGT carac_fora_escopo
+
+	MOV R1, R0
+	CMP #'z', R0			; r0 <= 122 (z)
+	BLT carac_fora_escopo
+	
+	JMP impime_carac_dig
+
+carac_fora_escopo:
+	MOV #putchar, R5
+	MOV #'+' R0
+	MOV #11, R1
+	JSR R7, _SISTEMA
+	JMP inicia_entrada
+
+impime_carac_dig:
+	MOV #putchar, R5
+	MOV R1, R0
+	MOV #11, R1
+	JSR R7, _SISTEMA
+	JMP inicia_entrada
+	
+
+fim:
+	HLT
