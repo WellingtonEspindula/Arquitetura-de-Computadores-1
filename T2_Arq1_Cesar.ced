@@ -17,8 +17,9 @@ _WORDS:		equ	h500		; mensagens e tabela de palavras
 
 org _VARS
 posicao_cursor:	db 0
-num_carac_dig:	db 0	
-palavra_atual:	dab 0
+num_carac_dig:	db 0			; numero de caracteres digitados pelo usuario no display
+palavra_atual:	dab 0			; palavra usada no jogo, sorteada no início de cada partida
+palavra_dig:	dab 0			; palavra digitada pelo usuário
 
 org _WORDS
 esp_dois_pontos:dab ' : '
@@ -81,17 +82,17 @@ puts:
 	MOV #0, R1			; começa a escrever na primeira posição do visor
 	JSR R7, _SISTEMA
 
-	MOV esp_dois_pontos, R3
+	MOV #esp_dois_pontos, R3
 	MOV #putchar, R5
-	MOV (R3), R0
+	MOV -1(R3), R0
 	MOV #8, R1
 	JSR R7, _SISTEMA
 	MOV #putchar, R5
-	MOV 1(R3), R0
+	MOV (R3), R0
 	INC R1
 	JSR R7, _SISTEMA
 	MOV #putchar, R5
-	MOV 2(R3), R0
+	MOV 1(R3), R0
 	INC R1
 	JSR R7, _SISTEMA	
 
@@ -116,7 +117,7 @@ comparacao_1:
 	CMP #'9', R0			; r0 <= 57 (9)
 	BLT comparacao_2
 	
-	JMP impime_carac_dig
+	JMP add_carac
 	
 comparacao_2:
 	CMP #'A', R0			; r0 >= 65 (A)
@@ -125,7 +126,7 @@ comparacao_2:
 	CMP #'Z', R0			; r0 <= 90 (Z)
 	BLT comparacao_3
 
-	JMP impime_carac_dig
+	JMP add_carac
 	
 comparacao_3:
 	CMP #'a', R0			; r0 >= 97 (a)
@@ -134,27 +135,46 @@ comparacao_3:
 	CMP #'z', R0			; r0 <= 122 (z)
 	BLT carac_fora_escopo
 	
-	JMP impime_carac_dig
+	JMP add_carac
 
 ;Verifica se é um enter ou um backspace
 carac_fora_escopo:
 	CMP #8, R0			; verifica se o usuário entrou com backspace
-	BEQ remove_caractere
+	BEQ bkspc
+	CMP #13, R0
+	BEQ enter
 	JMP inicia_entrada
 
-remove_caractere:
+bkspc:
 	MOV #putchar, R5
 	MOV #'!', R0
 	MOV #11, R1
 	JSR R7, _SISTEMA
 	JMP inicia_entrada
 
-impime_carac_dig:
+enter:
 	MOV #putchar, R5
+	MOV #'-', R0
 	MOV #11, R1
 	JSR R7, _SISTEMA
 	JMP inicia_entrada
-	
+
+add_carac:
+	MOV num_carac_dig, R2	; R2 = num_carac_dig
+	CMP #8, R2		; R2 == 8 (ASCII backspace)
+	BEQ display_cheio
+	MOV #palavra_dig, R3 	; R3 = end_palavra_dig
+	ADD R2, R3		; end_inserido = end_palavra_dig + num_carac_dig
+	MOV R0, (R3)		; palavra_dig[i] = entrada 
+				; Ou seja, move o caractere entrado para a memória
+	MOV #11, R1		; Inicia a digitacao na 12ª posicao do display
+	ADD R2, R1		; R1 += R2 ou R1 +=  num_carac_dig
+				; Isto é, adiciona o numero de caractere digitados no R1
+	JSR R7, _SISTEMA
+	JMP inicia_entrada
+
+display_cheio:
+	JMP inicia_entrada
 
 fim:
 	HLT
