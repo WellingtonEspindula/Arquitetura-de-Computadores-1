@@ -97,53 +97,51 @@ houve_entrada:
 trata_entrada:
 	MOV #getchar, R5		; r0 = getchar()
 	JSR R7, _SISTEMA
-	MOV R0, R1			; r1 = r0 (cópia de segurança)
 
-	; Verifica se o caractere digitado é alfanumérico
 
+; Verifica se o caractere digitado é alfanumérico
 comparacao_1:
-	MOV R1, R0
 	CMP #'0', R0			; r0 >= 48 (0)
 	BGT comparacao_2
 
-	MOV R1, R0
 	CMP #'9', R0			; r0 <= 57 (9)
 	BLT comparacao_2
 	
 	JMP impime_carac_dig
 	
 comparacao_2:
-	MOV R1, R0
 	CMP #'A', R0			; r0 >= 65 (A)
 	BGT comparacao_3
 
-	MOV R1, R0
 	CMP #'Z', R0			; r0 <= 90 (Z)
 	BLT comparacao_3
 
 	JMP impime_carac_dig
 	
 comparacao_3:
-	MOV R1, R0
 	CMP #'a', R0			; r0 >= 97 (a)
 	BGT carac_fora_escopo
 
-	MOV R1, R0
 	CMP #'z', R0			; r0 <= 122 (z)
 	BLT carac_fora_escopo
 	
 	JMP impime_carac_dig
 
+;Verifica se é um enter ou um backspace
 carac_fora_escopo:
+	CMP #8, R0			; verifica se o usuário entrou com backspace
+	BEQ remove_caractere
+	JMP inicia_entrada
+
+remove_caractere:
 	MOV #putchar, R5
-	MOV #'+' R0
+	MOV #'!', R0
 	MOV #11, R1
 	JSR R7, _SISTEMA
 	JMP inicia_entrada
 
 impime_carac_dig:
 	MOV #putchar, R5
-	MOV R1, R0
 	MOV #11, R1
 	JSR R7, _SISTEMA
 	JMP inicia_entrada
