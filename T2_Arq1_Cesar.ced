@@ -18,8 +18,9 @@ _WORDS:		equ	h500		; mensagens e tabela de palavras
 org _VARS
 posicao_cursor:	db 0
 num_carac_dig:	db 0			; numero de caracteres digitados pelo usuario no display
-palavra_atual:	dab 0			; palavra usada no jogo, sorteada no início de cada partida
-palavra_dig:	dab 0			; palavra digitada pelo usuário
+		db 0
+palavra_atual:	dab '        '		; palavra usada no jogo, sorteada no início de cada partida
+palavra_dig:	dab '        '		; palavra digitada pelo usuário
 
 org _WORDS
 esp_dois_pontos:dab ' : '
@@ -164,16 +165,25 @@ add_carac:
 	CMP #8, R2		; R2 == 8 (ASCII backspace)
 	BEQ display_cheio
 	MOV #palavra_dig, R3 	; R3 = end_palavra_dig
-	ADD R2, R3		; end_inserido = end_palavra_dig + num_carac_dig
+	ADD R2, R3		; i = end_palavra_dig + num_carac_dig
 	MOV R0, (R3)		; palavra_dig[i] = entrada 
 				; Ou seja, move o caractere entrado para a memória
+
+	MOV #putchar, R5	; modo putchar
+	MOV R2, R0
 	MOV #11, R1		; Inicia a digitacao na 12ª posicao do display
 	ADD R2, R1		; R1 += R2 ou R1 +=  num_carac_dig
 				; Isto é, adiciona o numero de caractere digitados no R1
 	JSR R7, _SISTEMA
+
+	INC num_carac_dig
 	JMP inicia_entrada
 
 display_cheio:
+	MOV #putchar, R5
+	MOV #'#', R0
+	MOV #11, R1
+	JSR R7, _SISTEMA
 	JMP inicia_entrada
 
 fim:
