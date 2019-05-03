@@ -18,14 +18,19 @@ _VARS:		equ	h400		; variáveis da aplicação
 _WORDS:		equ	h500		; mensagens e tabela de palavras
 
 org _VARS
-posicao_cursor:	db 0
 num_carac_dig:	db 0			; numero de caracteres digitados pelo usuario no display
+		db 0
+tempo_inicial:	db 0			; tempo do jogo quando começou
+		db 0
+tempo_final:	db 0			; tempo do jogo quando terminou
 		db 0
 palavra_atual:	dab '        '		; palavra usada no jogo, sorteada no início de cada partida
 palavra_dig:	dab '        '		; palavra digitada pelo usuário
 
 org _WORDS
-limpa_visor:	dab '                                    '	; visor em branco
+certo_msg:	dab ' - certo, ',0
+errou_msg:	dab ' - errou, ',0
+limpa_visor:	dab '                                    ',0	; visor em branco
 tab_seqs:	dab 'abcdefgh'		; índice 0
 		dab 'aaaaaaaa'		; índice 1 
 		dab 'AAAAAAAA'		; índice 2 
@@ -51,7 +56,6 @@ inicio:
 	CLR R3
 	CLR R4
 	CLR R5
-	CLR posicao_cursor
 	CLR num_carac_dig
 
 limpa_palavra_dig:
@@ -205,11 +209,7 @@ bkspc:
 	JMP poe_cursor
 
 enter:
-	MOV #putchar, R5
-	MOV #'-', R0
-	MOV #11, R1
-	JSR R7, _SISTEMA
-	JMP inicia_entrada
+	JMP comparacao
 
 
 volta_entrada:
@@ -265,5 +265,31 @@ poe_cursor:
 	JSR R7, _SISTEMA
 	JMP inicia_entrada
 
+
+comparacao:
+;	MOV #1, R0		; acertou = 1
+				; parte do pressuposto que o usuario acertou	
+	MOV #palavra_atual, R1
+	MOV #palavra_dig, R2
+	MOV #4, R3
+
+laco_comp:			; laço de comparação, percorre as strings comparando-as
+	CMP (R1)+, (R2)+
+	BNE errou
+	SOB R3, laco_comp
+
+acertou:
+	MOV #certo_msg, R0
+	BR escreve_msg
+
+errou:	
+	MOV #errou_msg, R0
+
+escreve_msg:
+	MOV #putmsg, R5
+	MOV #11, R1
+	ADD num_carac_dig, R1
+	JSR R7, _SISTEMA
+	
 fim:
 	HLT
