@@ -16,16 +16,13 @@ _APP:		equ	h0100		; inicio da APP
 _SISTEMA:	equ	h0080		; area das syscall
 _VARS:		equ	h400		; variáveis da aplicação
 _WORDS:		equ	h500		; mensagens e tabela de palavras
+_SUBROTINAS:	equ	h600		; espaco reservado para subrotinas auxiliares
 
 org _VARS
-num_carac_dig:	db 0			; numero de caracteres digitados pelo usuario no display
-		db 0
-tempo_inicial:	db 0			; tempo do jogo quando começou
-		db 0
-tempo_final:	db 0			; tempo do jogo quando terminou
-		db 0
-palavra_atual:	dab '        '		; palavra usada no jogo, sorteada no início de cada partida
-palavra_dig:	dab '        '		; palavra digitada pelo usuário
+num_carac_dig:	dw 0			; numero de caracteres digitados pelo usuario no display
+tempo_inicial:	dw 0			; tempo do jogo quando começou
+palavra_atual:	dab '        ',0	; palavra usada no jogo, sorteada no início de cada partida
+palavra_dig:	dab '        ',0	; palavra digitada pelo usuário
 
 org _WORDS
 certo_msg:	dab ' - certo, ',0
@@ -131,6 +128,9 @@ puts:
 
 
 inicia_entrada:
+	MOV #gettime, R5
+	JSR R7, _SISTEMA
+	MOV R0, tempo_inicial
 	
 houve_entrada:
 	MOV #kbhit, R5			; while (kbhit())
@@ -177,7 +177,7 @@ carac_fora_escopo:
 	BEQ bkspc
 	CMP #13, R0			; verifica se o usuário entrou com enter
 	BEQ enter
-	JMP inicia_entrada
+	JMP houve_entrada
 
 bkspc:
 	; VERIFICA SE PALAVRA NÃO ESTA VAZIA	
@@ -213,7 +213,7 @@ enter:
 
 
 volta_entrada:
-	JMP inicia_entrada
+	JMP houve_entrada
 
 add_carac:
 	MOV num_carac_dig, R1	; R1 = num_carac_dig
@@ -263,12 +263,10 @@ poe_cursor:
 	MOV #0, R0
 	INC R1
 	JSR R7, _SISTEMA
-	JMP inicia_entrada
+	JMP houve_entrada
 
 
 comparacao:
-;	MOV #1, R0		; acertou = 1
-				; parte do pressuposto que o usuario acertou	
 	MOV #palavra_atual, R1
 	MOV #palavra_dig, R2
 	MOV #4, R3
@@ -290,6 +288,48 @@ escreve_msg:
 	MOV #11, R1
 	ADD num_carac_dig, R1
 	JSR R7, _SISTEMA
+
+escreve_tempo:
+	MOV #gettime, R5
+	JSR R7, _SISTEMA	; pega tempo final da execucao
+	SUB tempo_inicial, R0	; pega variacao de tempo
+				; tempo_final (R0) - tempo_inicial
+	CMP #1000, R0		; 1000 - variacao_tempo
+	BLE demorou_demais	; se (variacao_tempo >= 1000) -> demorou demais
 	
+escreve_tempo_devdd:
+	MOV #putchar, R5
+	MOV #'X', R0
+	MOV #29, R1	
+	JSR R7, _SISTEMA
+
+	MOV #putchar, R5
+	INC R1
+	JSR R7, _SISTEMA
+
+	MOV #putchar, R5
+	INC R1
+	JSR R7, _SISTEMA
+	
+	JMP fim
+
+demorou_demais:	
+	MOV #putchar, R5
+	MOV #'9', R0
+	MOV #29, R1
+	JSR R7, _SISTEMA	
+	
+	MOV #putchar, R5
+	INC R1
+	JSR R7, _SISTEMA		
+
+	MOV #putchar, R5
+	INC R1
+	JSR R7, _SISTEMA
+
 fim:
 	HLT
+
+
+org _SUBROTINAS
+
