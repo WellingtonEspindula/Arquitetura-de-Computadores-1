@@ -21,13 +21,17 @@ _SUBROTINAS:	equ	h600		; espaco reservado para subrotinas auxiliares
 org _VARS
 num_carac_dig:	dw 0			; numero de caracteres digitados pelo usuario no display
 tempo_inicial:	dw 0			; tempo do jogo quando começou
+delta_tempo:	dw 0			; tempo de duracao do jogo
 palavra_atual:	dab '        ',0	; palavra usada no jogo, sorteada no início de cada partida
 palavra_dig:	dab '        ',0	; palavra digitada pelo usuário
 
 org _WORDS
+msg_iniciais: 	dab 'Wellington Espindula #00302367'
+			
 certo_msg:	dab ' - certo, ',0
 errou_msg:	dab ' - errou, ',0
-limpa_visor:	dab '                                    ',0	; visor em branco
+seg_msg:	dab 'seg',0
+cls:		dab '                                    ',0	; visor em branco
 tab_seqs:	dab 'abcdefgh'		; índice 0
 		dab 'aaaaaaaa'		; índice 1 
 		dab 'AAAAAAAA'		; índice 2 
@@ -48,12 +52,23 @@ tab_seqs:	dab 'abcdefgh'		; índice 0
 
 org _APP
 inicio:	
+
+jogo:
+limpa_visor:
+	MOV #putmsg, R5
+	MOV #cls, R0
+	MOV #0, R1
+	JSR R7, _SISTEMA
+
+limpa_variaveis_jogo:
 	CLR R1
 	CLR R2
 	CLR R3
 	CLR R4
 	CLR R5
 	CLR num_carac_dig
+	CLR tempo_inicial
+	CLR delta_tempo
 
 limpa_palavra_dig:
 	MOV #palavra_dig, R0
@@ -69,17 +84,6 @@ limpa_palavra_atual:
 	CLR (R0)+
 	CLR (R0)+
 	CLR R0
-
-;------------------------------------------------
-; 	DEPRECATED
-;	USADO PRA TESTAR ALEATORIEDADE
-;
-;	MOV #kbhit, R5	; while (kbhit())
-;	JSR R7, _SISTEMA
-;	TST R0
-;	BEQ inicio
-;
-;------------------------------------------------
 
 palavra_aleatoria:
 	MOV #gettime, R5
@@ -267,50 +271,68 @@ poe_cursor:
 
 
 comparacao:
-	MOV #palavra_atual, R1
-	MOV #palavra_dig, R2
-	MOV #4, R3
+	MOV #palavra_atual, R1	; move endereco da palavra do jogo para R1
+	MOV #palavra_dig, R2	; move endereco da palavra digitada para o R2
+	MOV #4, R3		; move 4 para registrador contador de laco. ou seja, percorre laco 4x
 
 laco_comp:			; laço de comparação, percorre as strings comparando-as
-	CMP (R1)+, (R2)+
-	BNE errou
-	SOB R3, laco_comp
+	CMP (R1)+, (R2)+	; compara os dois bytes de ambas as palavras
+	BNE errou		; caso diferentes, usuário errou
+	SOB R3, laco_comp	; decrementa contador e verifica se laco chegou ao fim
+				; se laco chegou ao fim sem desviar para errou, entao as palavras sao iguais e o usuario acertou
+				; continua no acertou
+acertou:			
+	MOV #certo_msg, R0	; se acertou, move acertou para R0
+	BR escreve_msg		; desvia para o escreve_msg
 
-acertou:
-	MOV #certo_msg, R0
-	BR escreve_msg
-
-errou:	
+errou:				; se errou, move errou para R0
 	MOV #errou_msg, R0
 
-escreve_msg:
+escreve_msg:			; Escreve mensagem de fim se acertou ou errou
 	MOV #putmsg, R5
 	MOV #11, R1
 	ADD num_carac_dig, R1
 	JSR R7, _SISTEMA
 
-escreve_tempo:
+escreve_tempo:			; escreve tempo decorrido na execucao da "partida"
 	MOV #gettime, R5
 	JSR R7, _SISTEMA	; pega tempo final da execucao
 	SUB tempo_inicial, R0	; pega variacao de tempo
-				; tempo_final (R0) - tempo_inicial
+				; R0 = tempo_final (R0) - tempo_inicial
+	MOV R0, delta_tempo	; delta_tempo = R0
 	CMP #1000, R0		; 1000 - variacao_tempo
 	BLE demorou_demais	; se (variacao_tempo >= 1000) -> demorou demais
-	
-escreve_tempo_devdd:
-	MOV #putchar, R5
-	MOV #'X', R0
-	MOV #29, R1	
-	JSR R7, _SISTEMA
 
-	MOV #putchar, R5
-	INC R1
-	JSR R7, _SISTEMA
+prepara_posicao_escrita:	
+	MOV num_carac_dig, R4
+	ADD #23, R4		; R4 = caracteres digitados + constantes de display (palavra_atual, " : ", " - certo, ") + 2
 
-	MOV #putchar, R5
-	INC R1
+desloca_bytes_tempo:
+	; Divide o tempo por 10, para pegar o resto e exibir na tela
+	MOV R0, R1		; como tempo esta no R0, move-o para R1
+	CLR R0			; limpa R0
+	MOV #10, R2             ; divisor
+	JSR R7,_S_DIVIDIR	; realiza divisao
+	
+	; Imprime na tela
+	MOV #putchar, R5	; modo putchar
+	MOV R1, R0		; move o resto da divisao para o R0
+	ADD #'0', R0		; add a constante do ASCII de '0', para representar o números como ASCII
+	MOV R4, R1		; move o endereço a ser escrito no R1
+	DEC R4			; decrementa o R4
 	JSR R7, _SISTEMA
 	
+	; Testa se tem mais algum numero algarismo a ser deslocado
+	TST R0
+	BEQ desloca_bytes_tempo
+	
+escreve_seg:			; escreve seg dps de exibir o tempo (numero) em segundos
+	MOV #putmsg, R5		; modo putmsg
+	MOV #seg_msg, R0	; move mensagem pro R0
+	ADD #3, R4		; alinha a posicao do visor
+	MOV R4, R1		; 
+	JSR R7, _SISTEMA	; escreve msg
+
 	JMP fim
 
 demorou_demais:	
@@ -327,9 +349,77 @@ demorou_demais:
 	INC R1
 	JSR R7, _SISTEMA
 
-fim:
+
+
+fim:				; terminou xD
 	HLT
 
 
+
+
+
+; -------- SUBROTINAS AUXILIARES PARA O JOGO --------
 org _SUBROTINAS
+;>
+;>
+;> Dividir int. positivo de 32 bits por um de 16 bits
+;>
+;> Chamada da subrotina:
+;>
+;> MOV #msbitsdividendo,R0      ; 16 bits mais significativos do dividendo
+;> MOV #lsbitsdividendo,R1      ; 16 bits menos significativos do dividendo
+;> MOV #divisor,R2              ; divisor (16 bits)
+;> JSR R7,_S_DIVIDIR
+;>
+;> No retorno da subrotina:
+;> - R0 contém o quociente (16 bits)
+;> - R1 contém o resto (16 bits)
+;> - R2 ainda contém o divisor, inalterado (16 bits)
+;> - Códigos de condição:
+;>   V = 1 indica que ocorreu estouro na divisão (quociente não cabe em 16 bits)
+;>   Z = 1 indica que ocorreu uma tentativa de divisão por zero
+;>   Nestes dois casos, R0, R1 e R2 não são alterados pela subrotina
+;>
+_S_DIVIDIR:
+          TST R2                ; testa divisor
+          BNE __NAO_ZERO        ; se <> zero, continua
+          CCC V                 ; indica divisao por zero
+          RTS R7                ; retorna ao ponto de chamada
+
+__NAO_ZERO:
+          CMP R0,R2             ; testa se dividendo(msb)
+                                ; e' >= que o divisor
+          BCC __INDICA_ESTOURO  ; se for, indicar estouro
+                                ; note: BCC equivale a um
+                                ; BGE para int. positivos
+;>
+          MOV R3,-(R6)          ; salva R3 na pilha
+          MOV R4,-(R6)          ; salva R4 na pilha
+          MOV R5,-(R6)          ; salva R5 na pilha
+          MOV R0,R3             ; copia dividendo para
+          MOV R1,R4             ; R3 e R4 (=q no final)
+          MOV #16,R5            ; inicializa contador
+          ASL R4                ; desloca dividendo p/a
+          ROL R3                ; esquerda e abre espaco
+          BCS __SUBTRAI_DIVISOR ; p/um bit do quociente
+          CMP R3,R2             ; se n+1 msbits do divid.
+          BCS __BIT_ZERO        ; maiores que divisor (= BLT p/inteiros positivos)
+__SUBTRAI_DIVISOR:
+          SUB R2,R3             ; subtrai divisor e
+          INC R4                ; ajusta bit do quociente
+__BIT_ZERO:
+          SOB R5,16             ; decr. R5; se <>0, repete
+          MOV R3,R1             ; copia resto para R1
+          MOV R4,R0             ; copia quociente p/R0
+          MOV (R6)+,R5          ; restaura
+          MOV (R6)+,R4          ; registradores
+          MOV (R6)+,R3          ; de trabalho
+          CCC V Z               ; limpa cod. de condicao
+          RTS R7                ; retorna ao ponto de chamada
+;>
+__INDICA_ESTOURO:
+          SCC V                 ; indica overflow e nao
+          CCC Z                 ; divisao por zero
+          RTS R7                ; retorna ao ponto de chamada
+
 
