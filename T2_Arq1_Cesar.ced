@@ -176,11 +176,33 @@ carac_fora_escopo:
 	JMP inicia_entrada
 
 bkspc:
+	; VERIFICA SE PALAVRA NÃO ESTA VAZIA	
+
+	TST num_carac_dig, 	; num_carac_dig <= 0  
+	BLE volta_entrada	; caso sim, volta para entrada do usuario
+				; se não, remove caractere
+
+	; DECREMENTA O NÚMERO DE CARACTERES DIGITADOS
+
+	DEC num_carac_dig	; num_carac_dig--
+	MOV num_carac_dig, R1 	; R1 = num_carac_dig
+
+	; REMOVE CARACTERE DA MEMORIA
+	
+	MOV #palavra_dig, R2 	; R2 = end_palavra_dig
+	ADD R1, R2		; i = end_palavra_dig + num_carac_dig
+	AND #255, (R2)		; AND 0000000|11111111 (mascara)
+				; Aplica a mascara no endereco apontado por R2
+				; ou seja, aplica mascara no endereco do ultimo caractere digitado, removendo-o.
+
+	; REMOVE CARACTERE DO DISPLAY
+
 	MOV #putchar, R5
-	MOV #'!', R0
-	MOV #11, R1
+	MOV #0, R0
+	ADD #11, R1
 	JSR R7, _SISTEMA
-	JMP inicia_entrada
+
+	JMP poe_cursor
 
 enter:
 	MOV #putchar, R5
@@ -190,13 +212,13 @@ enter:
 	JMP inicia_entrada
 
 
-display_cheio:
+volta_entrada:
 	JMP inicia_entrada
 
 add_carac:
 	MOV num_carac_dig, R1	; R1 = num_carac_dig
 	CMP #8, R1		; R1 == 8 (ASCII backspace)
-	BEQ display_cheio
+	BEQ volta_entrada
 	MOV #palavra_dig, R2 	; R2 = end_palavra_dig
 	ADD R1, R2		; i = end_palavra_dig + num_carac_dig
 	MOV R0, R3
@@ -221,20 +243,26 @@ add_carac:
 	JSR R7, _SISTEMA
 
 	INC num_carac_dig	; num_carac_dig++
-	
-	MOV num_carac_dig, R1	; R1 = num_carac_dig
-	CMP R1, #8		; se R1 < 8, poe cursor na posicao seguinte
-	BLT poe_cursor		
-
-	JMP inicia_entrada
+		
 
 poe_cursor:
+	; VERIFICA SE NUMERO DE CARACTERES É MAIS QUE 8
+	MOV num_carac_dig, R1	; R1 = num_carac_dig
+	CMP #8, R1		; 8 - R1
+	BLE volta_entrada	; R1 >= 8
+	
 	MOV #putchar, R5	; modo putchar
 	MOV #'_', R0		; R0 = '_'
 	ADD #11, R1		; Inicia a digitacao na 12ª posicao do display
 				; R1 =  11 + num_carac_dig
 	JSR R7, _SISTEMA
 
+	; REMOVE POSSIVEL CURSOR
+	
+	MOV #putchar, R5
+	MOV #0, R0
+	INC R1
+	JSR R7, _SISTEMA
 	JMP inicia_entrada
 
 fim:
