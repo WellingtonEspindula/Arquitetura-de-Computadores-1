@@ -263,7 +263,7 @@ add_carac:
 	ADD #11, R1			; Inicia a digitacao na 12ª posicao do display
 					; R1 =  11 + num_carac_dig
 					; Isto é, adiciona o numero de caractere digitados no R1
-	JSR R7, _SISTEMA
+	JSR R7, _SISTEMA		; chama a funcao
 
 	INC num_carac_dig		; num_carac_dig++
 		
@@ -328,11 +328,13 @@ prepara_posicao_escrita:
 
 desloca_bytes_tempo:
 	; Divide o tempo por 10, para pegar o resto e exibir na tela
-	MOV R0, R1			; como tempo esta no R0, move-o para R1
+	MOV delta_tempo, R1			; como tempo esta no R0, move-o para R1
 	CLR R0				; R0 = 0. Byte mais signifcativo do R0 = 0
 	MOV #10, R2            		; divisor
 	JSR R7,_S_DIVIDIR		; realiza divisao
-	
+
+	MOV R0, delta_tempo		; salva quociente da div
+
 	; Imprime na tela
 	MOV #putchar, R5		; modo putchar
 	MOV R1, R0			; move o resto da divisao para o R0
@@ -340,16 +342,18 @@ desloca_bytes_tempo:
 	MOV R4, R1			; move o endereço a ser escrito no R1
 	DEC R4				; decrementa o R4
 	JSR R7, _SISTEMA		; chama a funcao
+
+	
 	
 	; Testa se tem mais algum algarismo a ser deslocado
-	TST R0				; resto da div (R0) == 0?
-	BEQ desloca_bytes_tempo		; faz a operacao novamente
+	TST delta_tempo			; quociente == 0?
+	BNE desloca_bytes_tempo		; faz a operacao novamente
 	
 escreve_seg:				; escreve 'seg' dps de exibir o tempo (numero) em segundos
 	MOV #putmsg, R5			; modo putmsg
 	MOV #seg_msg, R0		; move mensagem pro R0
-	ADD #3, R4			; alinha a posicao do visor
-	MOV R4, R1			; R1 = pos_visor 
+	MOV num_carac_dig, R1
+	ADD #25, R1			; R4 = caracteres digitados + constantes de display (palavra_atual, " : ", " - certo, ", tempo)
 	JSR R7, _SISTEMA		; escreve msg
 
 	JMP fim_de_jogo			; vai para as mensagens de fim de jogo
@@ -371,7 +375,6 @@ demorou_demais:				; Caso o usuario tenha "saído para tomar um café" e esqueceu 
 	MOV #putchar, R5		; mesma coisa de antes. eu falei que tava burro
 	INC R1
 	JSR R7, _SISTEMA
-
 
 
 fim_de_jogo:	
