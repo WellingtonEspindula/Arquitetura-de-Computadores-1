@@ -16,7 +16,7 @@ _APP:		equ	h0100		; inicio da APP
 _SISTEMA:	equ	h0080		; area das syscall
 _VARS:		equ	h400		; variáveis da aplicação
 _WORDS:		equ	h500		; mensagens e tabela de palavras
-_SUBROTINAS:	equ	h600		; espaco reservado para subrotinas auxiliares
+_SUBROTINAS:	equ	h800		; espaco reservado para subrotinas auxiliares
 
 org _VARS
 num_carac_dig:	dw 0			; numero de caracteres digitados pelo usuario no display
@@ -26,8 +26,13 @@ palavra_atual:	dab '        ',0	; palavra usada no jogo, sorteada no início de c
 palavra_dig:	dab '        ',0	; palavra digitada pelo usuário
 
 org _WORDS
-msg_iniciais: 	dab 'Wellington Espindula #00302367'
-			
+msg_iniciais: 	dab 'Wellington Espindula #00302367      ',0
+		dab '                                    ',0
+		dab 'Escreva a sequencia no tempo minimo ',0
+		dab 'Pronto? Aperte enter para comecar   ',0
+msg_final:	dab 'Novo jogo (J/j) ou terminar (T/t)',0
+msg_final2:	dab 'Ate mais, e obrigado pelo jogo!',0
+dois_p_spc:	dab ' : ',0
 certo_msg:	dab ' - certo, ',0
 errou_msg:	dab ' - errou, ',0
 seg_msg:	dab 'seg',0
@@ -35,7 +40,7 @@ cls:		dab '                                    ',0	; visor em branco
 tab_seqs:	dab 'abcdefgh'		; índice 0
 		dab 'aaaaaaaa'		; índice 1 
 		dab 'AAAAAAAA'		; índice 2 
-		dab 'bbbbbbbb'		; índice 3 
+		dab 'aaaaaaaa'		; índice 3 
 		dab 'BBBBBBBB'		; índice 4 
 		dab 'cccccccc'		; índice 5 
 		dab 'CCCCCCCC'		; índice 6 
@@ -52,15 +57,28 @@ tab_seqs:	dab 'abcdefgh'		; índice 0
 
 org _APP
 inicio:	
+	MOV #msg_iniciais, R3		; R3 = end_msg_inicias
+	MOV #4, R2			; laco para mostrar as mensagens
 
-jogo:
-limpa_visor:
-	MOV #putmsg, R5
-	MOV #cls, R0
+exibe_mensagens:	
+	MOV #putmsg, R5			; imprime a mensagem na tela
+	MOV R3, R0			;
 	MOV #0, R1
 	JSR R7, _SISTEMA
+	
+	JSR R7, _S_ESPERA_ENTER
+	JSR R7, _S_CLS			; limpa a tela
 
-limpa_variaveis_jogo:
+	ADD #37, R3			; proxima mensagem
+
+	SOB R2, exibe_mensagens		; controle de laco
+
+; APOS EXIBIR AS MENSAGENS, VAI PARA O JOGO
+
+jogo:
+	JSR R7, _S_CLS			;limpa a tela
+
+limpa_variaveis_jogo:			; limpa as variaveis do jogo
 	CLR R1
 	CLR R2
 	CLR R3
@@ -70,14 +88,14 @@ limpa_variaveis_jogo:
 	CLR tempo_inicial
 	CLR delta_tempo
 
-limpa_palavra_dig:
+limpa_palavra_dig:			; limpa a palavra digitada
 	MOV #palavra_dig, R0
 	CLR (R0)+
 	CLR (R0)+
 	CLR (R0)+
 	CLR (R0)+
 
-limpa_palavra_atual:
+limpa_palavra_atual:			; limpa a palavra selecionada pelo programa
 	MOV #palavra_atual, R0
 	CLR (R0)+
 	CLR (R0)+
@@ -85,49 +103,39 @@ limpa_palavra_atual:
 	CLR (R0)+
 	CLR R0
 
-palavra_aleatoria:
-	MOV #gettime, R5
-	JSR R7,_SISTEMA
-	AND #15, R0
+palavra_aleatoria:			; gera palavra aleatoria
+	MOV #gettime, R5		; R0 = gettime()
+	JSR R7,_SISTEMA			
+	AND #15, R0			; faz uma mascara para selecionar o 4 bits menos significativos do tempo pego
+	ASL R0				; multiplica por 8 shiftando 3x
 	ASL R0
 	ASL R0
-	ASL R0
 
-cp_palavra_transf:
-	MOV #4, R3	
+cp_palavra_transf:			; copia a palavra aleatoria para a "area de transeferencia" (palavra_atual)
+	MOV #4, R3			; usa R3 como contador e itera 4 vezes
 
-	ADD #tab_seqs, R0	
-	MOV #palavra_atual, R1
+	ADD #tab_seqs, R0		; R0 = (8*num_aleatorio) (R0) + end_tab_seqs
+	MOV #palavra_atual, R1		; R1 = end_palavra_atual
 
 
-loop_cp:
-	MOV (R0)+, (R1)+
-	SOB R3, loop_cp
+loop_cp:				; copia a palavra que esta apontada pelo R0 para a palavra_atual
+	MOV (R0)+, (R1)+		; copia de dois em dois bytes e incrementa os ponteiros
+	SOB R3, loop_cp			; controle de laco
 
 puts:	
 	MOV #putmsg, R5			; modo putmsg
-	MOV #palavra_atual, R0
+	MOV #palavra_atual, R0		; imprime a palavra selcionada no visor
 	MOV #0, R1			; começa a escrever na primeira posição do visor
 	JSR R7, _SISTEMA
 
-	MOV #putchar, R5
-	MOV #' ', R0
+	MOV #putmsg, R5			; imprime ' : ' dps da palavra selecionada
+	MOV #dois_p_spc, R0
 	MOV #8, R1
 	JSR R7, _SISTEMA
-	
-	MOV #putchar, R5
-	MOV #':', R0
-	INC R1
-	JSR R7, _SISTEMA
-	
-	MOV #putchar, R5
-	MOV #' ', R0
-	INC R1
-	JSR R7, _SISTEMA	
-	
-	MOV #putchar, R5
+
+	MOV #putchar, R5		; escreve cursor logo apos a palavra e ' : '
 	MOV #'_', R0
-	INC R1
+	MOV #11, R1
 	JSR R7, _SISTEMA	
 
 
@@ -262,12 +270,12 @@ poe_cursor:
 	JSR R7, _SISTEMA
 
 	; REMOVE POSSIVEL CURSOR
-	
-	MOV #putchar, R5
-	MOV #0, R0
-	INC R1
-	JSR R7, _SISTEMA
-	JMP houve_entrada
+	; caso tenha um cursor na posicao seguinte, o remove.
+	MOV #putchar, R5	; modo putchar
+	MOV #0, R0		; R0 = caractere nulo
+	INC R1			; Incrementa posicao do display
+	JSR R7, _SISTEMA	; escreve
+	JMP houve_entrada	; volta para o laco
 
 
 comparacao:
@@ -333,9 +341,10 @@ escreve_seg:			; escreve seg dps de exibir o tempo (numero) em segundos
 	MOV R4, R1		; 
 	JSR R7, _SISTEMA	; escreve msg
 
-	JMP fim
+	JMP fim_de_jogo
 
-demorou_demais:	
+demorou_demais:			; Caso o usuario tenha "saído para tomar um café" e esqueceu do jogo, 
+				; limita o tempo até 999 (número máximo possível de ser representado com 3 algarismos)
 	MOV #putchar, R5
 	MOV #'9', R0
 	MOV #29, R1
@@ -350,6 +359,45 @@ demorou_demais:
 	JSR R7, _SISTEMA
 
 
+
+fim_de_jogo:	
+	JSR R7, _S_ESPERA_ENTER	; espera o usuario apertar enter
+	JSR R7, _S_CLS		; limpa tela
+	
+	MOV #putmsg, R5		; mostra mensagem final
+	MOV #msg_final, R0	
+	MOV #0, R1
+	JSR R7, _SISTEMA
+
+espera_j_ou_t:
+	MOV #getchar, R5	; R0 = getchar()
+	JSR R7, _SISTEMA
+	
+	CMP R0, #'j'		; R0 == 'j'?
+	BEQ novo_jogo		; se sim, novo jogo
+	CMP R0, #'J'		; R0 == 'J'?
+	BEQ novo_jogo		; idem	
+
+	CMP R0, #'t'		; R0 == 't'?
+	BEQ termina		; Se sim, termina
+	CMP R0, #'T'		; R0 == 'T'?
+	BEQ termina		; idem
+
+	BR espera_j_ou_t 	; se nenhum dos casos for válido, espera de novo
+
+novo_jogo:
+	JMP jogo		; novo jogo :)
+
+termina:
+	JSR R7, _S_CLS		; limpa a tela
+	
+	MOV #putmsg, R5		; poe a mensagem de despedida
+	MOV #msg_final2, R0
+	MOV #0, R1
+	JSR R7, _SISTEMA	
+
+	JSR R7, _S_ESPERA_ENTER	; espera enter
+	JSR R7, _S_CLS		; limpa a tela
 
 fim:				; terminou xD
 	HLT
@@ -423,3 +471,18 @@ __INDICA_ESTOURO:
           RTS R7                ; retorna ao ponto de chamada
 
 
+; ---------- SUBROTINA QUE ESPERA O USUARIO APERTAR ENTER -----------------
+_S_ESPERA_ENTER:		
+	MOV #getchar, R5	; R0 = getchar()
+	JSR R7, _SISTEMA
+	CMP #13, R0		; R0 == enter?
+	BNE _S_ESPERA_ENTER	; caso nao tenha apertado enter, espera ele pressionar algo novamente
+	RTS R7			; caso tenha apertado enter, volta ao programa
+
+; ---------- SUBROTINA QUE LIMPA A TELA -----------------
+_S_CLS:
+	MOV #putmsg, R5		; limpa a tela
+	MOV #cls, R0
+	MOV #0, R1
+	JSR R7, _SISTEMA
+	RTS R7
