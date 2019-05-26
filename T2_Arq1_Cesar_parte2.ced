@@ -189,7 +189,8 @@ _RESET:
 	
 ; 3) Inicializar as variaveis internas usadas pelo sistema de interrupcoes (IVET, INTE, etc.)
 	MOV #_ISR, IVET			; indica o endereço do início da subrotina de interrupção para o vetor de interrupção
-	OR #INTS_TIM_TEC, INTE		; indica que o serão habilitadas interrupções de tempo e de teclado
+	OR #INTS_TIM, INTE		; indica que o serão habilitadas interrupções de tempo e de teclado
+	OR #INTS_TEC, INTE		; indica que o serão habilitadas interrupções de tempo e de teclado	
 
 ; 4) Inicializar as variaveis internas do kernel
 	MOV #-1, TECLA
@@ -208,8 +209,8 @@ _RESET:
 	JSR R7, _S_CLS
 
 ; 8) Habilitar interrupcoes
-	OR INTS_ENB, INTE
-	
+	OR #INTS_ENB, INTE
+
 ; 9) Retornar para o programa de aplicacao com um desvio para o endereco 256 (H0100) da memoria
 	JMP _APP	
 
@@ -252,15 +253,15 @@ _S_GETCHAR:
 	JMP retorna
 
 
-_S_GETTIME:
+_S_GETTIME:				; TO DO 
 	MOV SEGUNDOS, R0
 	JMP retorna
 
-_S_PUTCHAR:
+_S_PUTCHAR:				; TO DO
 	MOV R0, VISOR
 	JMP retorna
 
-_S_PUTMSG:
+_S_PUTMSG:				; TO DO
 	MOV SEGUNDOS, R0
 	JMP retorna
 
@@ -270,7 +271,7 @@ _S_GETCLOCK:
 	MOV SEGUNDO, R2
 	JMP retorna
 
-_S_SETCLOCK:
+_S_SETCLOCK:				; TO DO
 	JMP retorna
 
 retorna:
@@ -315,7 +316,6 @@ INTS_TIM:	equ	1     ; (0000000000000001) - testar bit 0
 nINTS_TIM:	equ	HFFFE ; (1111111111111110) - zerar bit 0
 INTS_TEC:	equ	2     ; (0000000000000010) - testar bit 1
 nINTS_TEC:	equ	HFFFD ; (1111111111111101) - zerar bit 1
-INTS_TIM_TEC:	equ	3     ; (0000000000000011) - testar bit 0 e 1
 ;
 ; variáveis de comunicação com as funções do SISTEMA
 TECLA:		DW	0     ; código ASCII da tecla digitada (ou -1 se nenhuma)
@@ -333,7 +333,7 @@ _R2:		DW	0
 _R3:		DW	0
 _R4:		DW	0
 _R5:		DW	0	
-_CONTA_TEMPO:	DB	4
+_CONTA_TEMPO:	DW	5
 
 _ISR:
 ; Salva valores dos registradores
@@ -345,18 +345,68 @@ _ISR:
 	MOV R5, _R5
 
 verifica_interrupcao_tempo:
-	CMP INTS_TIM, INTS
+	MOV INTS, R0		; Move INTS para o R0 
+	AND #3, R0 		; Faz máscara para selecionar os bits de interrupção do teclado e do timer
+	
+	CMP #INTS_TIM, R0
 	BEQ houve_interrupcao_tempo
 	BNE verifica_interrupcao_teclado
 
 houve_interrupcao_tempo:
+	DEC _CONTA_TEMPO
+	TST _CONTA_TEMPO
+	BEQ acrescenta_segundos
+	BNE verifica_interrupcao_teclado
 	
+acrescenta_segundos:
+	INC SEGUNDOS
+reinicia_conta_tempo:
+	MOV #5, _CONTA_TEMPO
+acrescenta_segundo:
+; ADD SEGUNDO E VE SE PASSOU DE 60
+	INC SEGUNDO
+
+	MOV SEGUNDO, R1
+	ADD '0', R1
+	MOV R1, VISOR
+
+	CMP SEGUNDO, #60
+	BGE acrescenta_minuto
+	BNE zera_timer_ints
+
+acrescenta_minuto:
+	CLR SEGUNDO
+	INC MINUTO
+	CMP MINUTO, #60
+	BGE acrescenta_hora
+	BNE zera_timer_ints
+
+acrescenta_hora:	
+	CLR MINUTO
+	INC HORA
+	CMP HORA, #60
+	BGE zera_tempo
+	BNE zera_timer_ints
+
+zera_tempo:	
+	CLR HORA     
+	CLR MINUTO              
+	CLR SEGUNDO
+
+zera_timer_ints:
+	AND nINTS_TIM, INTS
 
 verifica_interrupcao_teclado:
-	
+	CMP INTS_TIM, R0
+	BEQ houve_interrupcao_teclado
+	BNE retorna_interrupcao
 
-reinicia_conta_tempo:
-	MOV #4, _CONTA_TEMPO
+houve_interrupcao_teclado:
+	; POR FAVOR, CARALHO, LEMBRA DE ZERAR O BUFFER E APAGAR ESSE COMENTÁRIO
+	;MOV TECDT, VISOR
+	;CLR TECST
+
+
 
 retorna_interrupcao:
 	RTI
