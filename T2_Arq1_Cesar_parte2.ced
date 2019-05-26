@@ -135,8 +135,19 @@ setclock_sr:
 ;	NADA deve ser codificado neste espaco, que estara reservado para fazer
 ;	a carga parcial dos programas usados para testar o KERNEL
 ;==============================================================================
-	
+
+
+
 	org	_APP
+
+
+	
+	MOV #PUTMSG, R5
+	MOV #msg, R0
+	MOV #0, R1
+	JSR R7, _SISTEMA
+	HLT
+
 ;
 ; ------------ TESTE ---------	
 ;	MOV #GETCHAR, R5
@@ -271,8 +282,30 @@ valida_posicao:
 	
 	CMP R1, #35
 	BLE fim_putmsg
+
+
+
+inicio_putmsg:	
+	ADD #VISOR, R1
+
+loop_putmsg:
+	MOV (R0), R3
+	HLT
+	AND #65280, R3
 	
-	MOV SEGUNDOS, R0
+	TST R3
+	BEQ fim_putmsg
+
+	MOV R3, (R1)
+
+	CMP R1, #65535
+	BGE volta_incio_visor
+	INC R1
+	JMP loop_putmsg
+	
+volta_incio_visor:
+	MOV #VISOR, R1
+	JMP loop_putmsg
 
 fim_putmsg:
 	JMP retorna
@@ -453,6 +486,15 @@ zera_teclado_ints:
 
 retorna_interrupcao:
 	RTI
+
+
+
+
+
+msg: 	dab 'Wellington Espindula #00302367      ',0	
+
+
+
 
 ; AQUI TENHO QUE 
 ; SALVAR REGISTRADORES
