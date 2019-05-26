@@ -137,14 +137,15 @@ setclock_sr:
 ;==============================================================================
 	
 	org	_APP
-	
-	MOV #GETCHAR, R5
-	JSR R7, _SISTEMA
-	MOV #PUTCHAR, R5
-	MOV #0, R1
-	JSR R7, _SISTEMA
-	JMP _APP
 ;
+; ------------ TESTE ---------	
+;	MOV #GETCHAR, R5
+;	JSR R7, _SISTEMA
+;	MOV #PUTCHAR, R5
+;	MOV #0, R1
+;	JSR R7, _SISTEMA
+;	HLT
+; ----------------------------
 ;
 ;
 ;
@@ -253,16 +254,27 @@ _S_GETCHAR:
 	JMP retorna
 
 
-_S_GETTIME:				; TO DO 
+_S_GETTIME:				
 	MOV SEGUNDOS, R0
 	JMP retorna
 
-_S_PUTCHAR:				; TO DO
-	MOV R0, VISOR
+_S_PUTCHAR:				
+	ADD #VISOR, R1
+	MOV R0, (R1)
 	JMP retorna
 
 _S_PUTMSG:				; TO DO
+valida_posicao:
+	; (posicao_do_visor >= 0) (posicao_do_visor <= 35)
+	CMP R1, #0
+	BGE fim_putmsg
+	
+	CMP R1, #35
+	BLE fim_putmsg
+	
 	MOV SEGUNDOS, R0
+
+fim_putmsg:
 	JMP retorna
 
 _S_GETCLOCK:
@@ -271,7 +283,38 @@ _S_GETCLOCK:
 	MOV SEGUNDO, R2
 	JMP retorna
 
-_S_SETCLOCK:				; TO DO
+_S_SETCLOCK:
+testa_hora:
+	; (HORA >= 0) && (HORA <= 23)
+	CMP R0, #0
+	BLE entrada_inconsistente
+	
+	CMP R0, #23
+	BGE entrada_inconsistente
+
+testa_minuto:
+	; (MINUTO >= 0) && (MINUTO <= 59)
+	CMP R1, #0
+	BLE entrada_inconsistente
+	
+	CMP R1, #59
+	BGE entrada_inconsistente
+
+testa_segundo:
+	; (SEGUNDO >= 0) && (SEGUNDO <= 59)
+	CMP R2, #0
+	BLE entrada_inconsistente
+	
+	CMP R2, #59
+	BGE entrada_inconsistente
+
+seta_tempo:
+	MOV R0, HORA
+	MOV R1, MINUTO
+	MOV R2, SEGUNDO
+
+entrada_inconsistente:
+	MOV #-1, R0
 	JMP retorna
 
 retorna:
@@ -333,7 +376,7 @@ _R2:		DW	0
 _R3:		DW	0
 _R4:		DW	0
 _R5:		DW	0	
-_CONTA_TEMPO:	DW	5
+_CONTA_TEMPO:	DW	4
 
 _ISR:
 ; Salva valores dos registradores
@@ -361,14 +404,14 @@ houve_interrupcao_tempo:
 acrescenta_segundos:
 	INC SEGUNDOS
 reinicia_conta_tempo:
-	MOV #5, _CONTA_TEMPO
+	MOV #4, _CONTA_TEMPO
 acrescenta_segundo:
 ; ADD SEGUNDO E VE SE PASSOU DE 60
 	INC SEGUNDO
 
-	MOV SEGUNDO, R1
-	ADD '0', R1
-	MOV R1, VISOR
+;	MOV SEGUNDO, R1
+;	ADD #'0', R1
+;	MOV R1, VISOR
 
 	CMP SEGUNDO, #60
 	BGE acrescenta_minuto
@@ -384,7 +427,7 @@ acrescenta_minuto:
 acrescenta_hora:	
 	CLR MINUTO
 	INC HORA
-	CMP HORA, #60
+	CMP HORA, #24
 	BGE zera_tempo
 	BNE zera_timer_ints
 
@@ -394,19 +437,19 @@ zera_tempo:
 	CLR SEGUNDO
 
 zera_timer_ints:
-	AND nINTS_TIM, INTS
+	AND #nINTS_TIM, INTS
 
 verifica_interrupcao_teclado:
-	CMP INTS_TIM, R0
+	CMP #INTS_TEC, R0
 	BEQ houve_interrupcao_teclado
 	BNE retorna_interrupcao
 
 houve_interrupcao_teclado:
-	; POR FAVOR, CARALHO, LEMBRA DE ZERAR O BUFFER E APAGAR ESSE COMENTÁRIO
-	;MOV TECDT, VISOR
-	;CLR TECST
+	MOV TECDT, TECLA	; Move tecla digitada para a variavel tecla
+	CLR TECST		; Limpa o buffer de estado de teclado
 
-
+zera_teclado_ints:
+	AND #nINTS_TEC, INTS
 
 retorna_interrupcao:
 	RTI
