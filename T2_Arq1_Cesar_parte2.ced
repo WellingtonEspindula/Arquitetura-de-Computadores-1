@@ -497,13 +497,13 @@ verifica_interrupcao_teclado:
 
 	TST R0				; Testa o bit
 	BNE houve_interrupcao_teclado	; Se for 1, houve interrupção de teclado
-	BEQ retorna_interrupcao		; Se for 0, retorna da interrupção
+	BEQ zera_teclado_ints		; Se for 0, retorna da interrupção
 
 houve_interrupcao_teclado:
 	MOV TECDT, TECLA		; Move tecla digitada para a variavel tecla
 	CLR TECST			; Limpa o buffer de estado de teclado
 
-zera_teclado_ints:
+zera_teclado_ints:			; Zera o flag de interrupção de tempo do INTS
 	AND #nINTS_TEC, INTS
 
 retorna_interrupcao:			; Restaura registradores e retorna da interrupção
