@@ -1,4 +1,4 @@
-    
+;    
 ; TRABALHO 2 - ARQUITETURA DE COMPUTADORES 1
 ; UNIVERSIDADE FEDERAL DO RIO GRANDE DO SUL
 ;
@@ -77,6 +77,8 @@ exibe_mensagens:
 	
 	JSR R7, _S_ESPERA_ENTER		; espera o usuario digitar enter
 	JSR R7, _S_CLS			; limpa a tela
+
+	HLT 
 
 	ADD #37, R3			; Incrementa R3 para pegar o endereco da proxima mensagem
 

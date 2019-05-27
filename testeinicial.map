@@ -1,0 +1,16 @@
+Símbolo         Valor Decimal   Valor Hexadecimal
+-------         -------------   -----------------
+KBHIT                       0                   0
+GETCHAR                     1                   1
+GETTIME                     2                   2
+PUTCHAR                     3                   3
+PUTMSG                      4                   4
+_APP                      256                 100
+_SISTEMA                  128                  80
+_VARS                    1024                 400
+POSICAO_CURSOR           1024                 400
+INICIO                    256                 100
+AGUARDA_ENTRADA           260                 104
+GETCH                     272                 110
+PUTCH                     280                 118
+FIM                       288                 120
