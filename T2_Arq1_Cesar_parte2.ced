@@ -85,13 +85,6 @@ _STACK:		equ	_IOAREA16    ; base da pilha na area do kernel
 ;==============================================================================
 	org	_SISTEMA
 
-	; SALVA REGISTRADORES	
-	MOV R0, _R0
-	MOV R1, _R1
-	MOV R2, _R2
-	MOV R3, _R3
-	MOV R4, _R4
-
 	CMP #KBHIT, R5		; Verifica se R5 é KBHIT
 	BEQ kbhit_sr		; Se sim, chama subrotina de KBHIT
 	
@@ -116,41 +109,31 @@ _STACK:		equ	_IOAREA16    ; base da pilha na area do kernel
 
 kbhit_sr:
 	JSR R7, _S_KBHIT
-	JMP volta_sr
+	RTS R7
 
 getchar_sr:
 	JSR R7, _S_GETCHAR
-	JMP volta_sr
+	RTS R7
 
 gettime_sr:
 	JSR R7, _S_GETTIME
-	JMP volta_sr
+	RTS R7
 
 putchar_sr:
 	JSR R7, _S_PUTCHAR
-	JMP volta_sr
+	RTS R7
 
 putmsg_sr:
 	JSR R7, _S_PUTMSG
-	JMP volta_sr
+	RTS R7
 
 getclock_sr:
 	JSR R7, _S_GETCLOCK
-	JMP volta_sr
+	RTS R7
 
 setclock_sr:
 	JSR R7, _S_SETCLOCK
-
-
-volta_sr:
-	MOV _R0, R0
-	MOV _R1, R1
-	MOV _R2, R2
-	MOV _R3, R3
-	MOV _R4, R4
-	RTS R7
-
-
+	RTS R7	
 
 
 
@@ -246,6 +229,15 @@ GETCLOCK: equ 5
 SETCLOCK: equ 6
 ;
 
+
+; Endereços para salvar registradores
+reg_0:		dw 0
+reg_1:		dw 0
+reg_2:		dw 0
+reg_3:		dw 0
+reg_4:		dw 0
+
+
 _S_KBHIT:				; SUBROTINA DE KBHIT
 	CMP #-1, TECLA			; Verifica se tem algum caractere em TECLA
 	BEQ n_digitada			; Caso sim, retorna 1 no R0
@@ -271,6 +263,9 @@ _S_GETTIME:				; SUBROTINA DE GETTIME
 	JMP retorna
 
 _S_PUTCHAR:				; SUBROTINA DE PUTCHAR
+
+	MOV R1, reg_1			; salva R1
+
 valida_pos:				; Valida entrada da posicao no R1
 	; ((posicao_do_visor < 0) || (posicao_do_visor > 35)) -> fim_putchar
 	CMP R1, #0			; (R1 < 0) -> fim_putchar
@@ -284,9 +279,15 @@ escreve_caractere:			; Caso a posicao informada esteja entre 0-35, então escreve
 	MOV R0, (R1)			; Copia o caractere informado em R0 para o visor na posicao informada
 
 fim_putchar:				; Retorna
+	MOV reg_1, R1			; restaura R1
 	JMP retorna
 		
 _S_PUTMSG:				; SUBROTINA DE PUTMSG
+	
+	MOV R0, reg_0			; salva registradores
+	MOV R1, reg_1
+	MOV R3, reg_3
+
 valida_posicao:
 	; ((posicao_do_visor < 0) || (posicao_do_visor > 35)) -> fim_putmsg
 	CMP R1, #0			; (R1 < 0) -> fim_putmsg
@@ -321,6 +322,9 @@ volta_incio_visor:			; Caso em que a mensagem excedeu o limite do visor
 	JMP loop_putmsg			; Retorna para o loop
 
 fim_putmsg:				; Fim do putmsg
+	MOV reg_0, R0			; restaura registradores
+	MOV reg_1, R1
+	MOV reg_3, R3
 	JMP retorna			
 
 _S_GETCLOCK:				; SUBROTINA DE GETCLOCK

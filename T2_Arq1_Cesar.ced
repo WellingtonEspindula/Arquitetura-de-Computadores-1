@@ -78,8 +78,6 @@ exibe_mensagens:
 	JSR R7, _S_ESPERA_ENTER		; espera o usuario digitar enter
 	JSR R7, _S_CLS			; limpa a tela
 
-	HLT 
-
 	ADD #37, R3			; Incrementa R3 para pegar o endereco da proxima mensagem
 
 	SOB R2, exibe_mensagens		; controle de laco
