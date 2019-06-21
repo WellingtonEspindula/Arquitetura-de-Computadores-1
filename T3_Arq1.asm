@@ -15,25 +15,33 @@
                   assume cs:codigo,ds:dados,es:dados,ss:pilha
 
 ; CONSTANTES
-CR              EQU    0DH ; codigo ASCII do caractere "carriage return"
-LF              EQU    0AH ; codigo ASCII do caractere "line feed"
-ATR_TELA        EQU    0BH ; fundo preto, caractere ciano claro
-BKSPC           EQU    08H ; caractere ASCII "Backspace"
-ESCP            EQU    27  ; caractere ASCII "Escape" (tecla ESC)
-HASHTAG         EQU    '#' ; caractere ASCII "#"
+NULL            EQU     00H ; codigo ASCII do fim de string
+CR              EQU     0DH ; codigo ASCII do caractere "carriage return"
+LF              EQU     0AH ; codigo ASCII do caractere "line feed"
+ATR_TELA        EQU     0BH ; fundo preto, caractere ciano claro
+BKSPC           EQU     08H ; caractere ASCII "Backspace"
+ESCP            EQU     27  ; caractere ASCII "Escape" (tecla ESC)
+HASHTAG         EQU     23H ; caractere ASCII "#"
+ZERO            EQU     30H ; caractere ASCII '0'
+NOVE            EQU     39H ; caractere ASCII '9'
 
 
 ; definicao do segmento de dados do programa
 dados    segment
-msg_ini     db     '>>> Leitor de arquivo com velocidade variavel <<<', CR, LF
-ident       db     '>>> Autor: Wellington Espindula #00302367 <<<',CR,LF,LF,'$'
-msg_arq     db     'Digite o nome do arquivo: $'
-arquivo     db     64 dup (?)
-            db     CR, LF, '$'
-erro        db     'Arquivo nao encontrado!',CR,LF,LF,'$'
-handler     dw     ?
-buffer      db     128 dup (?)
-feito       db     'FEITOOOO!!',CR,LF,LF,'$'
+msg_ini         db     '>>> Leitor de arquivo com velocidade variavel <<<', CR, LF
+ident           db     '>>> Autor: Wellington Espindula #00302367 <<<',CR,LF,LF,'$'
+msg_arq         db     'Digite o nome do arquivo: $'
+arquivo         db     64 dup (?)
+                db     CR, LF, '$'
+erro1_arq       db     'Erro 1: Arquivo nao encontrado',CR,LF,LF,'$'
+erro2_arq       db     'Erro 2: Caminho nao existe',CR,LF,LF,'$'
+erro3_arq       db     'Erro 3: Arquivos demais',CR,LF,LF,'$'
+erro4_arq       db     'Erro 4: Acesso negado',CR,LF,LF,'$'
+erro5_tag       db     'Erro 5: Arquivo com "tag" invalida',CR,LF,LF,'$'
+handler         dw     ?
+buffer          db     128 dup (?)
+feito           db     'FEITOOOO!!',CR,LF,LF,'$'
+tempo           db      0
 dados    ends
 
 ; definicao do segmento de pilha do programa
@@ -54,7 +62,9 @@ inicio:  ; CS e IP sao inicializados com este endereco
 programa:
         call    cls             ; limpa a tela
         lea     dx, msg_ini     ; escreve mensagens iniciais
-        call    write          
+        call    write    
+
+        mov     tempo,0         ; zera o tempo
 
 abre_arquivo:        
         lea     dx, msg_arq
@@ -67,33 +77,103 @@ abre_arquivo:
         mov     handler, ax
         jmp     arquivo_aberto
 
-; TODO -> mostrar o tipo do erro de abertura
-erro_abrir_arquivo:
-        lea     dx, erro
+erro_abrir_arquivo:             ; aqui trata o erro na abertura de arquivo
+; Verifica tipo de erro de abertura de arquivo
+        cmp     ax,2
+        je      erro1
+        cmp     ax,3
+        je      erro2
+        cmp     ax,4
+        je      erro3
+        cmp     ax,5
+        je      erro4
+
+; Tipificacao das mensagens de erro
+erro1:                          ; file not found
+        lea     dx, erro1_arq
+        jmp     escreve_erro
+erro2:                          ; path does not exist
+        lea     dx, erro2_arq
+        jmp     escreve_erro
+erro3:                          ; no handle available (too many files)
+        lea     dx, erro3_arq
+        jmp     escreve_erro
+erro4:                          ; access denied
+        lea     dx, erro4_arq
+escreve_erro:                   ; escreve mensagem de erros
         call    write
         jmp     abre_arquivo
 
 
 arquivo_aberto:
-loop_leitura:
-; TODO -> esperar o conta-ticsk
-        mov     bx, handler
-        lea     dx, buffer
-        call    fgetc
+        call    cls             ; limpa a tela antes de comecar a exibir o arquivo
 
-        mov     dl, buffer
-        cmp     dl, HASHTAG
-        je      mudanca_tempo
-        call    putch
+loop_leitura:
+        mov     al, tempo       ; passa o tempo como parametro para espera_tempo
+        call    espera_tempo    ; espera...
+
+        mov     bx, handler     ; passa o handler como parametro pelo reg BX   
+        lea     dx, buffer      ; passa o buffer como param pelo reg DX
+        call    fgetc           ; file getchar
+
+        mov     dl, buffer      ; passa o buffer como param pro 
+        cmp     dl, HASHTAG     ; verifica se tem '#'
+        je      mudanca_tempo   ; se sim, muda o tempo de espera para digitar cada caractere
+        call    putch           ; putchar
+
         jmp     loop_leitura
 
 ; TODO -> pegar o tempo e mudar a variavel de contagem
 mudanca_tempo:
-        lea dx, feito
-        call write
+        ; lea     dx, feito
+        ; call    write
         
+primeiro_caractere:
+        mov     bx, handler     ; passa o handler como parametro pelo reg BX   
+        lea     dx, buffer      ; passa o buffer como param pelo reg DX
+        call    fgetc           ; file getchar
+        mov     dl, buffer
+        call putch
+
+; Verifica se caractere esta entre 0-9
+valida_int_1:
+; (char < '0') && (char > '9') -> caractere invalido
+        cmp     dl, ZERO
+        jl      erro5
+        cmp     dl, NOVE
+        jg      erro5
+        jmp     add_primer_carac
+
+erro5:                          ; tag invalida
+        lea     dx, erro5_tag
+        call    write
+        jmp     fim
+
+add_primer_carac:
+        sub     dl, ZERO         ; tranforma numero (ASCII) em inteiro
+        mov     al, 10
+        mul     dl              ; multiplica por 10
+        mov     tempo, dl
+        
+segundo_caractere:
+        mov     bx, handler     ; passa o handler como parametro pelo reg BX   
+        lea     dx, buffer      ; passa o buffer como param pelo reg DX
+        call    fgetc           ; file getchar
+
+; Verifica se caractere esta entre 0-9
+valida_int_2:
+; (char < '0') && (char > '9') -> caractere invalido
+        cmp     dl, ZERO
+        jl      erro5
+        cmp     dl, NOVE
+        jg      erro5
+        jmp     add_segund_carac
 
 
+add_segund_carac:
+        sub     dl, ZERO         ; tranforma numero (ASCII) em inteiro
+        add     tempo, dl
+        jmp     loop_leitura
         
 
         
@@ -142,6 +222,7 @@ write   proc
 write   endp
 
 ; Recebe file handler no BX e recebe ponteiro pro buffer no DX
+; Retorna caractere lido no reg DL
 fgetc   proc
          mov ah,3fh                 ; le um caractere do arquivo
          mov cx,1
@@ -159,7 +240,7 @@ putch   endp
 
 ; Subrotina que recebe string do teclado
 ; Recebe o endereco onde a string sera armazenada no registrador SI
-gets   proc
+gets    proc
 end_str     dw      ?
 
          mov    end_str, di         ; copia o endereco da string
@@ -168,7 +249,7 @@ entrada:
          int    21h                ; le um caractere com eco
 
          cmp    al,ESCP            ; compara com ESCAPE (tecla ESC)
-         jne     valida_enter
+         jne    valida_enter
          jmp    terminar 
          
 valida_enter:
@@ -214,35 +295,63 @@ terminar:
 
 retorna:
          ret
-gets endp
+gets    endp
 
-; TODO
-file_open   proc
-; abre arquivo para leitura 
+; Abre arquivo para leitura 
+; TODO -> Comentario
+file_open       proc
          mov    ah,3dh
          mov    al,0
          int    21h
 
          ret
-file_open   endp
+file_open       endp
 
-file_close  proc
+file_close      proc
          mov ah,3eh                 ; fecha arquivo
          mov bx,handler
          int 21h
 
          ret
-file_close  endp
+file_close      endp
 
-espera_tecla proc
+espera_tecla    proc
          mov    ah,0               ; funcao esperar tecla no AH
          int    16h                ; chamada do DOS
          ret
-espera_tecla endp
+espera_tecla    endp
+
+; Recebe tempo (em ticks) no registrador AL
+espera_tempo    proc
+
+; -- variaveis locais
+ticks           db      0
+tempo_inicial   db      0
+
+; antes de entrar no loop
+pre_loop:
+        mov ticks, al           ; salva o numero de ticks
+
+        mov ah, 00h             
+        int 1ah                 ; chama o gettime do DOS
+        mov tempo_inicial, dl   ; salva o tempo inicial
 
 
+loop_espera:
+        mov     ah, 00h             
+        int     1ah                 ; chama o gettime do DOS
+        sub     dl, tempo_inicial   ; dl <- tempo_final (dl) - tempo_inicial
+        
+        cmp     ticks, dl           ; 
+        jg      loop_espera         ; while ( ticks > delta(tempo) )
+        ret
+espera_tempo endp
 
-
+; Verifica se a string esta vazia
+; TODO
+str_empty       proc
+        ret
+str_empty       endp
 
 
 
