@@ -3,7 +3,7 @@
 
  00000H 0016CH 0016DH DADOS              
  00170H 0026FH 00100H PILHA              
- 00270H 00348H 000D9H CODIGO             
+ 00270H 00355H 000E6H CODIGO             
 
 Program entry point at 0027:0000
 

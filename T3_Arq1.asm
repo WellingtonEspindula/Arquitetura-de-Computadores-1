@@ -15,11 +15,12 @@
                   assume cs:codigo,ds:dados,es:dados,ss:pilha
 
 ; CONSTANTES
-CR       EQU    0DH ; codigo ASCII do caractere "carriage return"
-LF       EQU    0AH ; codigo ASCII do caractere "line feed"
-ATR_TELA EQU    0BH ; fundo preto, caractere ciano claro
-BKSPC     EQU    08H ; caractere ASCII "Backspace"
-ESCP      EQU    27  ; caractere ASCII "Escape" (tecla ESC)
+CR              EQU    0DH ; codigo ASCII do caractere "carriage return"
+LF              EQU    0AH ; codigo ASCII do caractere "line feed"
+ATR_TELA        EQU    0BH ; fundo preto, caractere ciano claro
+BKSPC           EQU    08H ; caractere ASCII "Backspace"
+ESCP            EQU    27  ; caractere ASCII "Escape" (tecla ESC)
+HASHTAG         EQU    '#' ; caractere ASCII "#"
 
 
 ; definicao do segmento de dados do programa
@@ -66,6 +67,7 @@ abre_arquivo:
         mov     handler, ax
         jmp     arquivo_aberto
 
+; TODO -> mostrar o tipo do erro de abertura
 erro_abrir_arquivo:
         lea     dx, erro
         call    write
@@ -74,16 +76,21 @@ erro_abrir_arquivo:
 
 arquivo_aberto:
 loop_leitura:
+; TODO -> esperar o conta-ticsk
         mov     bx, handler
         lea     dx, buffer
         call    fgetc
 
-        ; TODO -> Comparar pra ver se tem um #
         mov     dl, buffer
+        cmp     dl, HASHTAG
+        je      mudanca_tempo
         call    putch
+        jmp     loop_leitura
 
-
-        
+; TODO -> pegar o tempo e mudar a variavel de contagem
+mudanca_tempo:
+        lea dx, feito
+        call write
         
 
 
