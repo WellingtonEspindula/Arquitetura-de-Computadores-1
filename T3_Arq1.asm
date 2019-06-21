@@ -27,8 +27,12 @@ dados    segment
 msg_ini     db     '>>> Leitor de arquivo com velocidade variavel <<<', CR, LF
 ident       db     '>>> Autor: Wellington Espindula #00302367 <<<',CR,LF,LF,'$'
 msg_arq     db     'Digite o nome do arquivo: $'
-arquivo     dw     ?
+arquivo     db     64 dup (?)
             db     CR, LF, '$'
+erro        db     'Arquivo nao encontrado!',CR,LF,LF,'$'
+handler     dw     ?
+buffer      db     128 dup (?)
+feito       db     'FEITOOOO!!',CR,LF,LF,'$'
 dados    ends
 
 ; definicao do segmento de pilha do programa
@@ -50,12 +54,38 @@ programa:
         call    cls             ; limpa a tela
         lea     dx, msg_ini     ; escreve mensagens iniciais
         call    write          
+
+abre_arquivo:        
         lea     dx, msg_arq
         call    write
         lea     di, arquivo
         call    gets
         lea     dx, arquivo
+        call    file_open
+        jc      erro_abrir_arquivo
+        mov     handler, ax
+        jmp     arquivo_aberto
+
+erro_abrir_arquivo:
+        lea     dx, erro
         call    write
+        jmp     abre_arquivo
+
+
+arquivo_aberto:
+loop_leitura:
+        mov     bx, handler
+        lea     dx, buffer
+        call    fgetc
+
+        ; TODO -> Comparar pra ver se tem um #
+        mov     dl, buffer
+        call    putch
+
+
+        
+        
+
 
         
 
@@ -103,6 +133,22 @@ write   proc
          int    21h                ; chamada do DOS
          ret
 write   endp
+
+; Recebe file handler no BX e recebe ponteiro pro buffer no DX
+fgetc   proc
+         mov ah,3fh                 ; le um caractere do arquivo
+         mov cx,1
+         int 21h
+         ret
+fgetc   endp
+
+
+; Recebe caractere no DL
+putch   proc
+         mov ah,2
+         int 21h
+         ret
+putch   endp
 
 ; Subrotina que recebe string do teclado
 ; Recebe o endereco onde a string sera armazenada no registrador SI
@@ -168,38 +214,18 @@ file_open   proc
 ; abre arquivo para leitura 
          mov    ah,3dh
          mov    al,0
-         lea    dx,nome
-         int 21h
-         jnc    abriu_ok
-         lea    dx,erro             ; endereco da mensagem em DX
-         mov    ah,9                ; funcao exibir mensagem no AH
-         int    21h                 ; chamada do DOS
-         jmp    de_novo
-;
-abriu_ok: mov handler,ax
-laco:    mov ah,3fh                 ; l� um caractere do arquivo
-         mov bx,handler
-         mov cx,1
-         lea dx,buffer
-         int 21h
-         cmp ax,cx
-         jne fim
-         mov dl, buffer             ; escreve caractere na tela
-         mov ah,2
-         int 21h
-;         
-         mov dl, buffer             ; escreve na tela at� encontrar um LF (fim de linha)
-         cmp dl, LF
-         jne laco
-;   
-         mov ah,8                   ; espera pela digitacao de uma tecla qualquer
-         int 21h
-         jmp laco
-;
-fim:     mov ah,3eh                 ; fecha arquivo
-         mov bx,handler
-         int 21h
+         int    21h
+
+         ret
 file_open   endp
+
+file_close  proc
+         mov ah,3eh                 ; fecha arquivo
+         mov bx,handler
+         int 21h
+
+         ret
+file_close  endp
 
 espera_tecla proc
          mov    ah,0               ; funcao esperar tecla no AH
