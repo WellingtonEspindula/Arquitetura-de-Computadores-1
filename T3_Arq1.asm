@@ -41,7 +41,8 @@ erro5_tag       db     'Erro 5: Arquivo com "tag" invalida',CR,LF,LF,'$'
 handler         dw     ?
 buffer          db     128 dup (?)
 feito           db     'FEITOOOO!!',CR,LF,LF,'$'
-tempo           db      0
+ticks           db      0
+tempo_i         db      0
 dados    ends
 
 ; definicao do segmento de pilha do programa
@@ -64,7 +65,7 @@ programa:
         lea     dx, msg_ini     ; escreve mensagens iniciais
         call    write    
 
-        mov     tempo,0         ; zera o tempo
+        mov     ticks, 00H      ; zera o tempo
 
 abre_arquivo:        
         lea     dx, msg_arq
@@ -109,31 +110,36 @@ arquivo_aberto:
         call    cls             ; limpa a tela antes de comecar a exibir o arquivo
 
 loop_leitura:
-        mov     al, tempo       ; passa o tempo como parametro para espera_tempo
-        call    espera_tempo    ; espera...
+        mov     ah, 00h             
+        int     1ah                 ; chama o gettime do DOS
+        mov     tempo_i, dl         ; salva o tempo inicial
 
         mov     bx, handler     ; passa o handler como parametro pelo reg BX   
         lea     dx, buffer      ; passa o buffer como param pelo reg DX
         call    fgetc           ; file getchar
+       
+        cmp     ax,cx
+        jne     fim
 
-        mov     dl, buffer      ; passa o buffer como param pro 
-        cmp     dl, HASHTAG     ; verifica se tem '#'
+        cmp     buffer, HASHTAG     ;tempo verifica se tem '#'
         je      mudanca_tempo   ; se sim, muda o tempo de espera para digitar cada caractere
+        
+        ; mov     ax, 97       ; passa o tempo como parametro para espera_tempo
+        ; mov     dl, tempo_i     ; passa o tempo inicial como parametro
+        ; call    espera_tempo    ; espera...
+        
+        mov     dl, buffer
         call    putch           ; putchar
 
         jmp     loop_leitura
 
 ; TODO -> pegar o tempo e mudar a variavel de contagem
-mudanca_tempo:
-        ; lea     dx, feito
-        ; call    write
-        
+mudanca_tempo:        
 primeiro_caractere:
         mov     bx, handler     ; passa o handler como parametro pelo reg BX   
         lea     dx, buffer      ; passa o buffer como param pelo reg DX
         call    fgetc           ; file getchar
-        mov     dl, buffer
-        call putch
+        mov     dl, buffer      ; busca o caractere retornado pelo fgetc e move pro reg DL
 
 ; Verifica se caractere esta entre 0-9
 valida_int_1:
@@ -142,6 +148,7 @@ valida_int_1:
         jl      erro5
         cmp     dl, NOVE
         jg      erro5
+
         jmp     add_primer_carac
 
 erro5:                          ; tag invalida
@@ -150,15 +157,16 @@ erro5:                          ; tag invalida
         jmp     fim
 
 add_primer_carac:
-        sub     dl, ZERO         ; tranforma numero (ASCII) em inteiro
-        mov     al, 10
+        sub     dl, ZERO        ; tranforma numero (ASCII) em inteiro
+        mov     al, AH
         mul     dl              ; multiplica por 10
-        mov     tempo, dl
+        mov     ticks, dl
         
 segundo_caractere:
         mov     bx, handler     ; passa o handler como parametro pelo reg BX   
         lea     dx, buffer      ; passa o buffer como param pelo reg DX
         call    fgetc           ; file getchar
+        mov     dl, buffer      ; busca o caractere retornado pelo fgetc e move pro reg DL
 
 ; Verifica se caractere esta entre 0-9
 valida_int_2:
@@ -172,7 +180,13 @@ valida_int_2:
 
 add_segund_carac:
         sub     dl, ZERO         ; tranforma numero (ASCII) em inteiro
-        add     tempo, dl
+        add     ticks, dl
+
+        ; REMOVER
+        ; Testes
+        ; mov     dl, ticks
+        ; call    putch
+
         jmp     loop_leitura
         
 
@@ -182,6 +196,8 @@ add_segund_carac:
 
 ; retorno ao DOS com codigo de retorno 0 no AL (fim normal)
 fim:
+         mov    bx, handler
+         call   file_close
          mov    ax,4c00h           ; funcao retornar ao DOS no AH
          int    21h                ; chamada do DOS
 
@@ -233,6 +249,7 @@ fgetc   endp
 
 ; Recebe caractere no DL
 putch   proc
+         mov ax,0
          mov ah,2
          int 21h
          ret
@@ -309,7 +326,6 @@ file_open       endp
 
 file_close      proc
          mov ah,3eh                 ; fecha arquivo
-         mov bx,handler
          int 21h
 
          ret
@@ -322,28 +338,28 @@ espera_tecla    proc
 espera_tecla    endp
 
 ; Recebe tempo (em ticks) no registrador AL
+; Recebe tempo inicialtempo_inicial no registrador DL
 espera_tempo    proc
 
 ; -- variaveis locais
-ticks           db      0
-tempo_inicial   db      0
+ticks_local     db      0
+tempo_i_local   db      0
 
 ; antes de entrar no loop
 pre_loop:
-        mov ticks, al           ; salva o numero de ticks
-
-        mov ah, 00h             
-        int 1ah                 ; chama o gettime do DOS
-        mov tempo_inicial, dl   ; salva o tempo inicial
-
+        mov     ticks_local, al         ; salva o numero de ticks
+        mov     tempo_i_local, dl       ; salva o tempo inicial
 
 loop_espera:
         mov     ah, 00h             
         int     1ah                 ; chama o gettime do DOS
-        sub     dl, tempo_inicial   ; dl <- tempo_final (dl) - tempo_inicial
+        sub     dl, tempo_i_local   ; dl <- tempo_final (dl) - tempo_inicial
         
         cmp     ticks, dl           ; 
-        jg      loop_espera         ; while ( ticks > delta(tempo) )
+        jle     retorna_espera      ; ticks <= delta(tempo) -> retorna
+        jmp     loop_espera
+
+retorna_espera:        
         ret
 espera_tempo endp
 
@@ -352,8 +368,6 @@ espera_tempo endp
 str_empty       proc
         ret
 str_empty       endp
-
-
 
 
 codigo   ends
