@@ -5,6 +5,11 @@
 ;
 ; Autor: Wellington Espindula (wmespindula@inf.ufrgs.br)
 ; #: 00302367
+; 
+; Sobre direitos de codigo:
+; Trabalho de autoria propria, porem alguns trechos 
+; de codigo presentes aqui foram extraidos dos exemplos
+; disponibilizados pelo Prof.º Dr.º Carlos Arthur Lang Lisboa.
 ;
 ; Versao: 2019.1.0
 ;
