@@ -8,7 +8,7 @@
 ;
 ; Versao: 2019.1.0
 ;
-; Resumo: 
+; Resumo: TODO
 ;
 ;************************************************************************************
 
@@ -19,30 +19,35 @@ NULL            EQU     00H ; codigo ASCII do fim de string
 CR              EQU     0DH ; codigo ASCII do caractere "carriage return"
 LF              EQU     0AH ; codigo ASCII do caractere "line feed"
 ATR_TELA        EQU     0BH ; fundo preto, caractere ciano claro
-BKSPC           EQU     08H ; caractere ASCII "Backspace"
-ESCP            EQU     27  ; caractere ASCII "Escape" (tecla ESC)
-HASHTAG         EQU     23H ; caractere ASCII "#"
-ZERO            EQU     30H ; caractere ASCII '0'
-NOVE            EQU     39H ; caractere ASCII '9'
+BKSPC           EQU     08H ; codeigo ASCII "Backspace"
+ESCP            EQU     27  ; codeigo ASCII "Escape" (tecla ESC)
+HASHTAG         EQU     23H ; codeigo ASCII "#"
+ZERO            EQU     30H ; codeigo ASCII '0'
+NOVE            EQU     39H ; codeigo ASCII '9'
+r_min           EQU     72H ; codeigo ASCII 'r'
+R_mai           EQU     52H ; codeigo ASCII 'R'
+n_min           EQU     6EH ; codeigo ASCII 'n'
+N_mai           EQU     4EH ; codeigo ASCII 'N'
 
 
 ; definicao do segmento de dados do programa
 dados    segment
-msg_ini         db     '>>> Leitor de arquivo com velocidade variavel <<<', CR, LF
-ident           db     '>>> Autor: Wellington Espindula #00302367 <<<',CR,LF,LF,'$'
-msg_arq         db     'Digite o nome do arquivo: $'
-arquivo         db     64 dup (?)
-                db     CR, LF, '$'
-erro1_arq       db     'Erro 1: Arquivo nao encontrado',CR,LF,LF,'$'
-erro2_arq       db     'Erro 2: Caminho nao existe',CR,LF,LF,'$'
-erro3_arq       db     'Erro 3: Arquivos demais',CR,LF,LF,'$'
-erro4_arq       db     'Erro 4: Acesso negado',CR,LF,LF,'$'
-erro5_tag       db     'Erro 5: Arquivo com "tag" invalida',CR,LF,LF,'$'
-handler         dw     ?
-buffer          db     128 dup (?)
-feito           db     'FEITOOOO!!',CR,LF,LF,'$'
+msg_ini         db      '>>> Leitor de arquivo com velocidade variavel <<<', CR, LF
+ident           db      '>>> Autor: Wellington Espindula #00302367 <<<',CR,LF,LF,'$'
+msg_arq         db      'Digite o nome do arquivo: $'
+arquivo         db      64 dup (?)
+                db      CR, LF, '$'
+erro1_arq       db      'Erro 1: Arquivo nao encontrado',CR,LF,LF,'$'
+erro2_arq       db      'Erro 2: Caminho nao existe',CR,LF,LF,'$'
+erro3_arq       db      'Erro 3: Arquivos demais',CR,LF,LF,'$'
+erro4_arq       db      'Erro 4: Acesso negado',CR,LF,LF,'$'
+erro5_tag       db      'Erro 5: Arquivo com "tag" invalida',CR,LF,LF,'$'
+handler         dw      ?
+buffer          db      128 dup (?)
+feito           db      'FEITOOOO!!',CR,LF,LF,'$'
 ticks           db      0
 tempo_i         db      0
+msg_fim         db      'Execucao interrompida normalmente a pedido do usuario',CR,LF,'$'
 dados    ends
 
 ; definicao do segmento de pilha do programa
@@ -65,18 +70,28 @@ programa:
         lea     dx, msg_ini     ; escreve mensagens iniciais
         call    write    
 
-        mov     ticks, 00H      ; zera o tempo
-
+etapa2:
 abre_arquivo:        
-        lea     dx, msg_arq
-        call    write
-        lea     di, arquivo
-        call    gets
-        lea     dx, arquivo
-        call    file_open
-        jc      erro_abrir_arquivo
-        mov     handler, ax
-        jmp     arquivo_aberto
+        lea     dx, msg_arq     ; passa endereco de msg_arq como parametro para write
+        call    write           ; escreve mensagens na tela
+        lea     di, arquivo     ; passa endereco da string arquivo como parametro para gets
+        call    gets            ; pega string do usuario e carrega no endereco passado
+
+        mov     al, [arquivo]   ; move primeiro byte da string arquivo pra al
+        cmp     al, NULL        ; verifica se a string esteja vazia
+        je      jmp_exibe_fim   ; se sim, mostra mensagem de fim de execucao
+
+r_pressed:
+        lea     dx, arquivo     ; passa string arquivo como parametro
+        call    file_open       ; abre o arquivo
+        jc      erro_abrir_arquivo      ; em caso de erro de abertura, mostra o erro
+        mov     handler, ax     ; move saida do handler do arquivo pro handler
+        jmp     arquivo_aberto  ; faz operacoes...
+
+
+jmp_exibe_fim:
+        jmp     exibe_fim
+
 
 erro_abrir_arquivo:             ; aqui trata o erro na abertura de arquivo
 ; Verifica tipo de erro de abertura de arquivo
@@ -89,6 +104,7 @@ erro_abrir_arquivo:             ; aqui trata o erro na abertura de arquivo
         cmp     ax,5
         je      erro4
 
+; ------------------ ERROS ----------------------------------
 ; Tipificacao das mensagens de erro
 erro1:                          ; file not found
         lea     dx, erro1_arq
@@ -105,36 +121,82 @@ escreve_erro:                   ; escreve mensagem de erros
         call    write
         jmp     abre_arquivo
 
-
+etapa3:
 arquivo_aberto:
-        call    cls             ; limpa a tela antes de comecar a exibir o arquivo
+        call    cls                     ; limpa a tela antes de comecar a exibir o arquivo
+        mov     ticks, 00H              ; zera o tempo
+        mov     ah, 00h             
+        int     1ah                     ; chama o gettime do DOS
+        mov     tempo_i, dl             ; salva o tempo inicial
 
+etapa4:
 loop_leitura:
         mov     ah, 00h             
-        int     1ah                 ; chama o gettime do DOS
-        mov     tempo_i, dl         ; salva o tempo inicial
+        int     1ah                     ; chama o gettime do DOS
+        mov     tempo_i, dl             ; salva o tempo inicial
 
-        mov     bx, handler     ; passa o handler como parametro pelo reg BX   
-        lea     dx, buffer      ; passa o buffer como param pelo reg DX
-        call    fgetc           ; file getchar
+        mov     bx, handler             ; passa o handler como parametro pelo reg BX   
+        lea     dx, buffer              ; passa o buffer como param pelo reg DX
+        call    fgetc                   ; file getchar
        
         cmp     ax,cx
-        jne     fim
+        jne     verifica_digitacao
 
-        cmp     buffer, HASHTAG     ;tempo verifica se tem '#'
-        je      mudanca_tempo   ; se sim, muda o tempo de espera para digitar cada caractere
+        cmp     buffer, HASHTAG         ; verifica se tem '#'
+        je      mudanca_tempo           ; se sim, muda o tempo de espera para digitar cada caractere
         
-        ; mov     ax, 97       ; passa o tempo como parametro para espera_tempo
-        ; mov     dl, tempo_i     ; passa o tempo inicial como parametro
-        ; call    espera_tempo    ; espera...
+        call    espera_tempo            ; espera...
         
         mov     dl, buffer
-        call    putch           ; putchar
+        call    putch                   ; putchar
+
+        mov     ah, 01H                 ; kbhit
+        int     16h                     ;
+        jnz      verifica_digitacao      ; caso tecla tenha sido pressionada, verifica o que houve
 
         jmp     loop_leitura
 
-; TODO -> pegar o tempo e mudar a variavel de contagem
+
+etapa7:
+        mov     bx, handler     ; passa arquivo como parametro
+        call    file_close      ; fecha arquivo
+        call    cls             ; limpa a tela
+        jmp     etapa2          ; volta a etapa 2
+
+verifica_digitacao:
+        call    espera_tecla
+        cmp     al, r_min
+        je      jmp_r_pressed
+        cmp     al, R_mai
+        je      jmp_r_pressed
+
+        cmp     al, n_min
+        je      etapa7
+        cmp     al, N_mai
+        je      etapa7
+
+        cmp     al, ESCP
+        je      exibe_fim
+        
+        jmp     loop_leitura
+
+
+jmp_r_pressed:                  ; reinicia a exibicao do arqvuido 
+        mov     bx, handler     ; passa arquivo como parametro
+        call    file_close      ; fecha arquivo
+        call    cls             ; limpa a tela
+        jmp     r_pressed       ; abre arquivo, confere erros, leitura, ...
+
+
+exibe_fim:
+        lea     dx, msg_fim
+        call    write
+        jmp     fim
+
+
+; ------------------- MUDANCA DE TEMPO ---------------------------;
 mudanca_tempo:        
+        mov     ticks, 0
 primeiro_caractere:
         mov     bx, handler     ; passa o handler como parametro pelo reg BX   
         lea     dx, buffer      ; passa o buffer como param pelo reg DX
@@ -152,9 +214,10 @@ valida_int_1:
         jmp     add_primer_carac
 
 erro5:                          ; tag invalida
-        lea     dx, erro5_tag
+        lea     dx, erro5_tag   ; mostra erro
         call    write
-        jmp     fim
+        call    espera_tecla    ; espera tecla
+        jmp     etapa7      ; volta pra etapa 2
 
 add_primer_carac:
         sub     dl, ZERO        ; tranforma numero (ASCII) em inteiro
@@ -182,24 +245,14 @@ add_segund_carac:
         sub     dl, ZERO         ; tranforma numero (ASCII) em inteiro
         add     ticks, dl
 
-        ; REMOVER
-        ; Testes
-        ; mov     dl, ticks
-        ; call    putch
-
         jmp     loop_leitura
-        
-
-        
 
 
-
+;---------------------- FIM ------------------------------
 ; retorno ao DOS com codigo de retorno 0 no AL (fim normal)
 fim:
-         mov    bx, handler
-         call   file_close
-         mov    ax,4c00h           ; funcao retornar ao DOS no AH
-         int    21h                ; chamada do DOS
+        mov    ax,4c00h        ; funcao retornar ao DOS no AH
+        int    21h             ; chamada do DOS
 
 
 
@@ -211,23 +264,23 @@ fim:
 cls     proc
 ; limpa a tela usando atributos de tela definidos aqui
 limpa_tela:
-         mov     ch,0         ; linha zero  - canto superior esquerdo 
-         mov     cl,0         ; coluna zero - da janela
-         mov     dh,24        ; linha 24    - canto inferior direito
-         mov     dl,79        ; coluna 79   - da janela
-         mov     bh,ATR_TELA  ; atributo de preenchimento
-         mov     al,0         ; numero de linhas (zero = toda a janela)
-         mov     ah,6         ; rola janela para cima
-         int     10h          ; chamada BIOS (video)  
+        mov     ch,0         ; linha zero  - canto superior esquerdo 
+        mov     cl,0         ; coluna zero - da janela
+        mov     dh,24        ; linha 24    - canto inferior direito
+        mov     dl,79        ; coluna 79   - da janela
+        mov     bh,ATR_TELA  ; atributo de preenchimento
+        mov     al,0         ; numero de linhas (zero = toda a janela)
+        mov     ah,6         ; rola janela para cima
+        int     10h          ; chamada BIOS (video)  
 
 ; posiciona cursor no canto superior esquerdo
 posiciona_cursor:
-         mov     dh,0         ; linha zero  
-         mov     dl,0         ; coluna zero
-         mov     bh,0         ; numero da pagina (zero = primeira)
-         mov     ah,2         ; define posicao do cursor
-         int     10h          ; chamada BIOS (video)
-         ret
+        mov     dh,0         ; linha zero  
+        mov     dl,0         ; coluna zero
+        mov     bh,0         ; numero da pagina (zero = primeira)
+        mov     ah,2         ; define posicao do cursor
+        int     10h          ; chamada BIOS (video)
+        ret
 cls     endp
 
 write   proc
@@ -240,10 +293,10 @@ write   endp
 ; Recebe file handler no BX e recebe ponteiro pro buffer no DX
 ; Retorna caractere lido no reg DL
 fgetc   proc
-         mov ah,3fh                 ; le um caractere do arquivo
-         mov cx,1
-         int 21h
-         ret
+        mov ah,3fh                 ; le um caractere do arquivo
+        mov cx,1
+        int 21h
+        ret
 fgetc   endp
 
 
@@ -257,119 +310,97 @@ putch   endp
 
 ; Subrotina que recebe string do teclado
 ; Recebe o endereco onde a string sera armazenada no registrador SI
-gets    proc
 end_str     dw      ?
+gets    proc
 
-         mov    end_str, di         ; copia o endereco da string
+        mov    end_str, di         ; copia o endereco da string
 entrada: 
-         mov    ah,1
-         int    21h                ; le um caractere com eco
+        mov    ah,1
+        int    21h                ; le um caractere com eco
 
-         cmp    al,ESCP            ; compara com ESCAPE (tecla ESC)
-         jne    valida_enter
-         jmp    terminar 
+        cmp    al,ESCP            ; compara com ESCAPE (tecla ESC)
+        jne    valida_enter
+        jmp    terminar 
          
 valida_enter:
-         cmp    al,CR              ; compara com carriage return (tecla ENTER)
-         je     continua
+        cmp    al,CR              ; compara com carriage return (tecla ENTER)
+        je     continua
 
 valida_bksp:
-         cmp    al,BKSPC           ; compara com 'backspace'
-         je     backspace
+        cmp    al,BKSPC           ; compara com 'backspace'
+        je     backspace
 
-         mov    [di],al            ; coloca caractere lido no buffer
-         inc    di
-         jmp    entrada
+        mov    [di],al            ; coloca caractere lido no buffer
+        inc    di
+        jmp    entrada
 
 backspace:
-         cmp    di,end_str
-         jne    adiante
-         mov    dl,' '              ; avanca cursor na tela
-         mov    ah,2
-         int    21h
-         jmp    entrada
+        cmp    di,end_str
+        jne    adiante
+        mov    dl,' '              ; avanca cursor na tela
+        mov    ah,2
+        int    21h
+        jmp    entrada
 adiante:
-         mov    dl,' '              ; apaga ultimo caractere digitado
-         mov    ah,2
-         int    21h
-         mov    dl,BKSPC            ; recua cusor na tela
-         mov    ah,2
-         int    21h
-         dec    di
-         jmp    entrada
+        mov    dl,' '              ; apaga ultimo caractere digitado
+        mov    ah,2
+        int    21h
+        mov    dl,BKSPC            ; recua cusor na tela
+        mov    ah,2
+        int    21h
+        dec    di
+        jmp    entrada
 
 continua: 
-         mov    byte ptr [di],0     ; forma string ASCIIZ com o nome do arquivo
-         mov    dl,LF               ; escreve LF na tela
-         mov    ah,2
-         int    21h
-         jmp    retorna
+        mov    byte ptr [di],0     ; forma string ASCIIZ com o nome do arquivo
+        mov    dl,LF               ; escreve LF na tela
+        mov    ah,2
+        int    21h
+        jmp    retorna
 
 terminar:
-         mov    ax,4c00h            ; funcao retornar ao DOS no AH
-                                    ; codigo de retorno 0 no AL
-         int    21h                 ; chamada do DOS
+        mov    ax,4c00h            ; funcao retornar ao DOS no AH
+                                   ; codigo de retorno 0 no AL
+        int    21h                 ; chamada do DOS
 
 retorna:
-         ret
+        ret
 gets    endp
 
 ; Abre arquivo para leitura 
 ; TODO -> Comentario
 file_open       proc
-         mov    ah,3dh
-         mov    al,0
-         int    21h
+        mov    ah,3dh
+        mov    al,0
+        int    21h
 
-         ret
+        ret
 file_open       endp
 
 file_close      proc
-         mov ah,3eh                 ; fecha arquivo
-         int 21h
+        mov ah,3eh                 ; fecha arquivo
+        int 21h
 
-         ret
+        ret
 file_close      endp
 
 espera_tecla    proc
-         mov    ah,0               ; funcao esperar tecla no AH
-         int    16h                ; chamada do DOS
-         ret
+        mov    ah,0               ; funcao esperar tecla no AH
+        int    16h                ; chamada do DOS
+        ret
 espera_tecla    endp
 
-; Recebe tempo (em ticks) no registrador AL
-; Recebe tempo inicialtempo_inicial no registrador DL
+
 espera_tempo    proc
-
-; -- variaveis locais
-ticks_local     db      0
-tempo_i_local   db      0
-
-; antes de entrar no loop
-pre_loop:
-        mov     ticks_local, al         ; salva o numero de ticks
-        mov     tempo_i_local, dl       ; salva o tempo inicial
-
 loop_espera:
         mov     ah, 00h             
-        int     1ah                 ; chama o gettime do DOS
-        sub     dl, tempo_i_local   ; dl <- tempo_final (dl) - tempo_inicial
+        int     1ah             ; chama o gettime do DOS
+        sub     dl, tempo_i     ; dl <- tempo_final (dl) - tempo_inicial
         
-        cmp     ticks, dl           ; 
-        jle     retorna_espera      ; ticks <= delta(tempo) -> retorna
-        jmp     loop_espera
-
-retorna_espera:        
+        cmp     ticks, dl       ; 
+        jg      loop_espera     ; while (ticks > delta(t))
         ret
 espera_tempo endp
-
-; Verifica se a string esta vazia
-; TODO
-str_empty       proc
-        ret
-str_empty       endp
-
-
 codigo   ends
 
 ; a diretiva a seguir indica o fim do codigo fonte (ultima linha do arquivo)

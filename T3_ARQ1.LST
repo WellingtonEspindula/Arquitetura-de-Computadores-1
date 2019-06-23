@@ -1,4 +1,4 @@
-Turbo Assembler	 Version 3.2	    06/22/19 21:23:14	    Page 1
+Turbo Assembler	 Version 3.2	    06/23/19 01:49:24	    Page 1
 T3_ARQ1.ASM
 
 
@@ -24,434 +24,474 @@ T3_ARQ1.ASM
      19	      =000D		     CR		     EQU     0DH ; codigo ASCII	do caractere "carriage return"
      20	      =000A		     LF		     EQU     0AH ; codigo ASCII	do caractere "line feed"
      21	      =000B		     ATR_TELA	     EQU     0BH ; fundo preto,	caractere ciano	claro
-     22	      =0008		     BKSPC	     EQU     08H ; caractere ASCII "Backspace"
-     23	      =001B		     ESCP	     EQU     27	 ; caractere ASCII "Escape" (tecla ESC)
-     24	      =0023		     HASHTAG	     EQU     23H ; caractere ASCII "#"
-     25	      =0030		     ZERO	     EQU     30H ; caractere ASCII '0'
-     26	      =0039		     NOVE	     EQU     39H ; caractere ASCII '9'
-     27
-     28
-     29				     ; definicao do segmento de	dados do programa
-     30	0000			     dados    segment
-     31	0000  3E 3E 3E 20 4C 65	69+  msg_ini	     db	    '>>> Leitor	de arquivo com velocidade variavel <<<', CR, LF
-     32	      74 6F 72 20 64 65	20+
-     33	      61 72 71 75 69 76	6F+
-     34	      20 63 6F 6D 20 76	65+
-     35	      6C 6F 63 69 64 61	64+
-     36	      65 20 76 61 72 69	61+
-     37	      76 65 6C 20 3C 3C	3C+
-     38	      0D 0A
-     39	0033  3E 3E 3E 20 41 75	74+  ident	     db	    '>>> Autor:	Wellington Espindula #00302367 <<<',CR,LF,LF,'$'
-     40	      6F 72 3A 20 57 65	6C+
-     41	      6C 69 6E 67 74 6F	6E+
-     42	      20 45 73 70 69 6E	64+
-     43	      75 6C 61 20 23 30	30+
-     44	      33 30 32 33 36 37	20+
-     45	      3C 3C 3C 0D 0A 0A	24
-     46	0064  44 69 67 69 74 65	20+  msg_arq	     db	    'Digite o nome do arquivo: $'
-     47	      6F 20 6E 6F 6D 65	20+
-     48	      64 6F 20 61 72 71	75+
-     49	      69 76 6F 3A 20 24
-     50	007F  40*(??)		     arquivo	     db	    64 dup (?)
-     51	00BF  0D 0A 24				     db	    CR,	LF, '$'
-     52	00C2  45 72 72 6F 20 31	3A+  erro1_arq	     db	    'Erro 1: Arquivo nao encontrado',CR,LF,LF,'$'
-     53	      20 41 72 71 75 69	76+
-     54	      6F 20 6E 61 6F 20	65+
-     55	      6E 63 6F 6E 74 72	61+
-     56	      64 6F 0D 0A 0A 24
-     57	00E4  45 72 72 6F 20 32	3A+  erro2_arq	     db	    'Erro 2: Caminho nao existe',CR,LF,LF,'$'
-Turbo Assembler	 Version 3.2	    06/22/19 21:23:14	    Page 2
+     22	      =0008		     BKSPC	     EQU     08H ; codeigo ASCII "Backspace"
+     23	      =001B		     ESCP	     EQU     27	 ; codeigo ASCII "Escape" (tecla ESC)
+     24	      =0023		     HASHTAG	     EQU     23H ; codeigo ASCII "#"
+     25	      =0030		     ZERO	     EQU     30H ; codeigo ASCII '0'
+     26	      =0039		     NOVE	     EQU     39H ; codeigo ASCII '9'
+     27	      =0072		     r_min	     EQU     72H ; codeigo ASCII 'r'
+     28	      =0052		     R_mai	     EQU     52H ; codeigo ASCII 'R'
+     29	      =006E		     n_min	     EQU     6EH ; codeigo ASCII 'n'
+     30	      =004E		     N_mai	     EQU     4EH ; codeigo ASCII 'N'
+     31
+     32
+     33				     ; definicao do segmento de	dados do programa
+     34	0000			     dados    segment
+     35	0000  3E 3E 3E 20 4C 65	69+  msg_ini	     db	     '>>> Leitor de arquivo com	velocidade variavel <<<', CR, LF
+     36	      74 6F 72 20 64 65	20+
+     37	      61 72 71 75 69 76	6F+
+     38	      20 63 6F 6D 20 76	65+
+     39	      6C 6F 63 69 64 61	64+
+     40	      65 20 76 61 72 69	61+
+     41	      76 65 6C 20 3C 3C	3C+
+     42	      0D 0A
+     43	0033  3E 3E 3E 20 41 75	74+  ident	     db	     '>>> Autor: Wellington Espindula #00302367	<<<',CR,LF,LF,'$'
+     44	      6F 72 3A 20 57 65	6C+
+     45	      6C 69 6E 67 74 6F	6E+
+     46	      20 45 73 70 69 6E	64+
+     47	      75 6C 61 20 23 30	30+
+     48	      33 30 32 33 36 37	20+
+     49	      3C 3C 3C 0D 0A 0A	24
+     50	0064  44 69 67 69 74 65	20+  msg_arq	     db	     'Digite o nome do arquivo:	$'
+     51	      6F 20 6E 6F 6D 65	20+
+     52	      64 6F 20 61 72 71	75+
+     53	      69 76 6F 3A 20 24
+     54	007F  40*(??)		     arquivo	     db	     64	dup (?)
+     55	00BF  0D 0A 24				     db	     CR, LF, '$'
+     56	00C2  45 72 72 6F 20 31	3A+  erro1_arq	     db	     'Erro 1: Arquivo nao encontrado',CR,LF,LF,'$'
+     57	      20 41 72 71 75 69	76+
+Turbo Assembler	 Version 3.2	    06/23/19 01:49:24	    Page 2
 T3_ARQ1.ASM
 
 
 
-     58	      20 43 61 6D 69 6E	68+
-     59	      6F 20 6E 61 6F 20	65+
-     60	      78 69 73 74 65 0D	0A+
-     61	      0A 24
-     62	0102  45 72 72 6F 20 33	3A+  erro3_arq	     db	    'Erro 3: Arquivos demais',CR,LF,LF,'$'
-     63	      20 41 72 71 75 69	76+
-     64	      6F 73 20 64 65 6D	61+
-     65	      69 73 0D 0A 0A 24
-     66	011D  45 72 72 6F 20 34	3A+  erro4_arq	     db	    'Erro 4: Acesso negado',CR,LF,LF,'$'
-     67	      20 41 63 65 73 73	6F+
-     68	      20 6E 65 67 61 64	6F+
-     69	      0D 0A 0A 24
-     70	0136  45 72 72 6F 20 35	3A+  erro5_tag	     db	    'Erro 5: Arquivo com "tag" invalida',CR,LF,LF,'$'
-     71	      20 41 72 71 75 69	76+
-     72	      6F 20 63 6F 6D 20	22+
-     73	      74 61 67 22 20 69	6E+
-     74	      76 61 6C 69 64 61	0D+
-     75	      0A 0A 24
-     76	015C  ????		     handler	     dw	    ?
-     77	015E  80*(??)		     buffer	     db	    128	dup (?)
-     78	01DE  46 45 49 54 4F 4F	4F+  feito	     db	    'FEITOOOO!!',CR,LF,LF,'$'
-     79	      4F 21 21 0D 0A 0A	24
-     80	01EC  00		     ticks	     db	     0
-     81	01ED  00		     tempo_i	     db	     0
-     82	01EE			     dados    ends
-     83
-     84				     ; definicao do segmento de	pilha do programa
-     85	0000			     pilha    segment stack ; permite inicializacao automatica de SS:SP
-     86	0000  80*(4040)			      dw     128 dup('@@')
-     87	0100			     pilha    ends
-     88
-     89				     ; definicao do segmento de	codigo do programa
-     90	0000			     codigo   segment
-     91
-     92	0000			     inicio:  ;	CS e IP	sao inicializados com este endereco
-     93	0000  B8 0000s			      mov    ax,dados ;	inicializa DS
-     94	0003  8E D8			      mov    ds,ax    ;	com endereco do	segmento DADOS
-     95	0005  8E C0			      mov    es,ax    ;	idem em	ES
-     96				     ; fim da carga inicial dos	registradores de segmento
-     97
-     98				     ; inicio do programa
-     99	0007			     programa:
-    100	0007  E8 00DB			     call    cls	     ; limpa a tela
-    101	000A  BA 0000r			     lea     dx, msg_ini     ; escreve mensagens iniciais
-    102	000D  E8 00F0			     call    write
+     58	      6F 20 6E 61 6F 20	65+
+     59	      6E 63 6F 6E 74 72	61+
+     60	      64 6F 0D 0A 0A 24
+     61	00E4  45 72 72 6F 20 32	3A+  erro2_arq	     db	     'Erro 2: Caminho nao existe',CR,LF,LF,'$'
+     62	      20 43 61 6D 69 6E	68+
+     63	      6F 20 6E 61 6F 20	65+
+     64	      78 69 73 74 65 0D	0A+
+     65	      0A 24
+     66	0102  45 72 72 6F 20 33	3A+  erro3_arq	     db	     'Erro 3: Arquivos demais',CR,LF,LF,'$'
+     67	      20 41 72 71 75 69	76+
+     68	      6F 73 20 64 65 6D	61+
+     69	      69 73 0D 0A 0A 24
+     70	011D  45 72 72 6F 20 34	3A+  erro4_arq	     db	     'Erro 4: Acesso negado',CR,LF,LF,'$'
+     71	      20 41 63 65 73 73	6F+
+     72	      20 6E 65 67 61 64	6F+
+     73	      0D 0A 0A 24
+     74	0136  45 72 72 6F 20 35	3A+  erro5_tag	     db	     'Erro 5: Arquivo com "tag"	invalida',CR,LF,LF,'$'
+     75	      20 41 72 71 75 69	76+
+     76	      6F 20 63 6F 6D 20	22+
+     77	      74 61 67 22 20 69	6E+
+     78	      76 61 6C 69 64 61	0D+
+     79	      0A 0A 24
+     80	015C  ????		     handler	     dw	     ?
+     81	015E  80*(??)		     buffer	     db	     128 dup (?)
+     82	01DE  46 45 49 54 4F 4F	4F+  feito	     db	     'FEITOOOO!!',CR,LF,LF,'$'
+     83	      4F 21 21 0D 0A 0A	24
+     84	01EC  00		     ticks	     db	     0
+     85	01ED  00		     tempo_i	     db	     0
+     86	01EE  45 78 65 63 75 63	61+  msg_fim	     db	     'Execucao interrompida normalmente	a pedido do usuario',CR,LF,'$'
+     87	      6F 20 69 6E 74 65	72+
+     88	      72 6F 6D 70 69 64	61+
+     89	      20 6E 6F 72 6D 61	6C+
+     90	      6D 65 6E 74 65 20	61+
+     91	      20 70 65 64 69 64	6F+
+     92	      20 64 6F 20 75 73	75+
+     93	      61 72 69 6F 0D 0A	24
+     94	0226			     dados    ends
+     95
+     96				     ; definicao do segmento de	pilha do programa
+     97	0000			     pilha    segment stack ; permite inicializacao automatica de SS:SP
+     98	0000  80*(4040)			      dw     128 dup('@@')
+     99	0100			     pilha    ends
+    100
+    101				     ; definicao do segmento de	codigo do programa
+    102	0000			     codigo   segment
     103
-    104	0010  C6 06 01ECr 00		     mov     ticks, 00H	     ; zera o tempo
-    105
-    106	0015			     abre_arquivo:
-    107	0015  BA 0064r			     lea     dx, msg_arq
-    108	0018  E8 00E5			     call    write
-    109	001B  BF 007Fr			     lea     di, arquivo
-    110	001E  E8 00F4			     call    gets
-    111	0021  BA 007Fr			     lea     dx, arquivo
-    112	0024  E8 013D			     call    file_open
-    113	0027  72 06			     jc	     erro_abrir_arquivo
-    114	0029  A3 015Cr			     mov     handler, ax
-Turbo Assembler	 Version 3.2	    06/22/19 21:23:14	    Page 3
+    104	0000			     inicio:  ;	CS e IP	sao inicializados com este endereco
+    105	0000  B8 0000s			      mov    ax,dados ;	inicializa DS
+    106	0003  8E D8			      mov    ds,ax    ;	com endereco do	segmento DADOS
+    107	0005  8E C0			      mov    es,ax    ;	idem em	ES
+    108				     ; fim da carga inicial dos	registradores de segmento
+    109
+    110				     ; inicio do programa
+    111	0007			     programa:
+    112	0007  E8 0133			     call    cls	     ; limpa a tela
+    113	000A  BA 0000r			     lea     dx, msg_ini     ; escreve mensagens iniciais
+    114	000D  E8 0148			     call    write
+Turbo Assembler	 Version 3.2	    06/23/19 01:49:24	    Page 3
 T3_ARQ1.ASM
 
 
 
-    115	002C  EB 2F 90			     jmp     arquivo_aberto
-    116
-    117	002F			     erro_abrir_arquivo:	     ; aqui trata o erro na abertura de	arquivo
-    118				     ; Verifica	tipo de	erro de	abertura de arquivo
-    119	002F  3D 0002			     cmp     ax,2
-    120	0032  74 0F			     je	     erro1
-    121	0034  3D 0003			     cmp     ax,3
-    122	0037  74 10			     je	     erro2
-    123	0039  3D 0004			     cmp     ax,4
-    124	003C  74 11			     je	     erro3
-    125	003E  3D 0005			     cmp     ax,5
-    126	0041  74 12			     je	     erro4
-    127
-    128				     ; Tipificacao das mensagens de erro
-    129	0043			     erro1:			     ; file not	found
-    130	0043  BA 00C2r			     lea     dx, erro1_arq
-    131	0046  EB 10 90			     jmp     escreve_erro
-    132	0049			     erro2:			     ; path does not exist
-    133	0049  BA 00E4r			     lea     dx, erro2_arq
-    134	004C  EB 0A 90			     jmp     escreve_erro
-    135	004F			     erro3:			     ; no handle available (too	many files)
-    136	004F  BA 0102r			     lea     dx, erro3_arq
-    137	0052  EB 04 90			     jmp     escreve_erro
-    138	0055			     erro4:			     ; access denied
-    139	0055  BA 011Dr			     lea     dx, erro4_arq
-    140	0058			     escreve_erro:		     ; escreve mensagem	de erros
-    141	0058  E8 00A5			     call    write
-    142	005B  EB B8			     jmp     abre_arquivo
-    143
-    144
-    145	005D			     arquivo_aberto:
-    146	005D  E8 0085			     call    cls	     ; limpa a tela antes de comecar a exibir o	arquivo
-    147
-    148	0060			     loop_leitura:
-    149	0060  B4 00			     mov     ah, 00h
-    150	0062  CD 1A			     int     1ah		 ; chama o gettime do DOS
-    151	0064  88 16 01EDr		     mov     tempo_i, dl	 ; salva o tempo inicial
-    152
-    153	0068  8B 1E 015Cr		     mov     bx, handler     ; passa o handler como parametro pelo reg BX
-    154	006C  BA 015Er			     lea     dx, buffer	     ; passa o buffer como param pelo reg DX
-    155	006F  E8 0093			     call    fgetc	     ; file getchar
-    156
-    157	0072  3B C1			     cmp     ax,cx
-    158	0074  75 63			     jne     fim
-    159
-    160	0076  80 3E 015Er 23		     cmp     buffer, HASHTAG	 ;tempo	verifica se tem	'#'
-    161	007B  74 09			     je	     mudanca_tempo   ; se sim, muda o tempo de espera para digitar cada	caractere
-    162
-    163					     ; mov     ax, 97	    ; passa o tempo como parametro para	espera_tempo
-    164					     ; mov     dl, tempo_i     ; passa o tempo inicial como parametro
-    165					     ; call    espera_tempo    ; espera...
+    115
+    116	0010			     etapa2:
+    117	0010			     abre_arquivo:
+    118	0010  BA 0064r			     lea     dx, msg_arq     ; passa endereco de msg_arq como parametro	para write
+    119	0013  E8 0142			     call    write	     ; escreve mensagens na tela
+    120	0016  BF 007Fr			     lea     di, arquivo     ; passa endereco da string	arquivo	como parametro para gets
+    121	0019  E8 0153			     call    gets	     ; pega string do usuario e	carrega	no endereco passado
+    122
+    123	001C  A0 007Fr			     mov     al, [arquivo]   ; move primeiro byte da string arquivo pra	al
+    124	001F  3C 00			     cmp     al, NULL	     ; verifica	se a string esteja vazia
+    125	0021  74 0E			     je	     jmp_exibe_fim   ; se sim, mostra mensagem de fim de execucao
+    126
+    127	0023			     r_pressed:
+    128	0023  BA 007Fr			     lea     dx, arquivo     ; passa string arquivo como parametro
+    129	0026  E8 0193			     call    file_open	     ; abre o arquivo
+    130	0029  72 09			     jc	     erro_abrir_arquivo	     ; em caso de erro de abertura, mostra o erro
+    131	002B  A3 015Cr			     mov     handler, ax     ; move saida do handler do	arquivo	pro handler
+    132	002E  EB 32 90			     jmp     arquivo_aberto  ; faz operacoes...
+    133
+    134
+    135	0031			     jmp_exibe_fim:
+    136	0031  E9 00A0			     jmp     exibe_fim
+    137
+    138
+    139	0034			     erro_abrir_arquivo:	     ; aqui trata o erro na abertura de	arquivo
+    140				     ; Verifica	tipo de	erro de	abertura de arquivo
+    141	0034  3D 0002			     cmp     ax,2
+    142	0037  74 0F			     je	     erro1
+    143	0039  3D 0003			     cmp     ax,3
+    144	003C  74 10			     je	     erro2
+    145	003E  3D 0004			     cmp     ax,4
+    146	0041  74 11			     je	     erro3
+    147	0043  3D 0005			     cmp     ax,5
+    148	0046  74 12			     je	     erro4
+    149
+    150				     ; ------------------ ERROS	----------------------------------
+    151				     ; Tipificacao das mensagens de erro
+    152	0048			     erro1:			     ; file not	found
+    153	0048  BA 00C2r			     lea     dx, erro1_arq
+    154	004B  EB 10 90			     jmp     escreve_erro
+    155	004E			     erro2:			     ; path does not exist
+    156	004E  BA 00E4r			     lea     dx, erro2_arq
+    157	0051  EB 0A 90			     jmp     escreve_erro
+    158	0054			     erro3:			     ; no handle available (too	many files)
+    159	0054  BA 0102r			     lea     dx, erro3_arq
+    160	0057  EB 04 90			     jmp     escreve_erro
+    161	005A			     erro4:			     ; access denied
+    162	005A  BA 011Dr			     lea     dx, erro4_arq
+    163	005D			     escreve_erro:		     ; escreve mensagem	de erros
+    164	005D  E8 00F8			     call    write
+    165	0060  EB AE			     jmp     abre_arquivo
     166
-    167	007D  8A 16 015Er		     mov     dl, buffer
-    168	0081  E8 0089			     call    putch	     ; putchar
-    169
-    170	0084  EB DA			     jmp     loop_leitura
-    171
-Turbo Assembler	 Version 3.2	    06/22/19 21:23:14	    Page 4
+    167	0062			     etapa3:
+    168	0062			     arquivo_aberto:
+    169	0062  E8 00D8			     call    cls		     ; limpa a tela antes de comecar a exibir o	arquivo
+    170	0065  C6 06 01ECr 00		     mov     ticks, 00H		     ; zera o tempo
+    171	006A  B4 00			     mov     ah, 00h
+Turbo Assembler	 Version 3.2	    06/23/19 01:49:24	    Page 4
 T3_ARQ1.ASM
 
 
 
-    172				     ; TODO -> pegar o tempo e mudar a variavel	de contagem
-    173	0086			     mudanca_tempo:
-    174	0086			     primeiro_caractere:
-    175	0086  8B 1E 015Cr		     mov     bx, handler     ; passa o handler como parametro pelo reg BX
-    176	008A  BA 015Er			     lea     dx, buffer	     ; passa o buffer como param pelo reg DX
-    177	008D  E8 0075			     call    fgetc	     ; file getchar
-    178	0090  8A 16 015Er		     mov     dl, buffer	     ; busca o caractere retornado pelo	fgetc e	move pro reg DL
-    179
-    180				     ; Verifica	se caractere esta entre	0-9
-    181	0094			     valida_int_1:
-    182				     ; (char < '0') && (char > '9') -> caractere invalido
-    183	0094  80 FA 30			     cmp     dl, ZERO
-    184	0097  7C 08			     jl	     erro5
-    185	0099  80 FA 39			     cmp     dl, NOVE
-    186	009C  7F 03			     jg	     erro5
+    172	006C  CD 1A			     int     1ah		     ; chama o gettime do DOS
+    173	006E  88 16 01EDr		     mov     tempo_i, dl	     ; salva o tempo inicial
+    174
+    175	0072			     etapa4:
+    176	0072			     loop_leitura:
+    177	0072  B4 00			     mov     ah, 00h
+    178	0074  CD 1A			     int     1ah		     ; chama o gettime do DOS
+    179	0076  88 16 01EDr		     mov     tempo_i, dl	     ; salva o tempo inicial
+    180
+    181	007A  8B 1E 015Cr		     mov     bx, handler	     ; passa o handler como parametro pelo reg BX
+    182	007E  BA 015Er			     lea     dx, buffer		     ; passa o buffer como param pelo reg DX
+    183	0081  E8 00D9			     call    fgetc		     ; file getchar
+    184
+    185	0084  3B C1			     cmp     ax,cx
+    186	0086  75 26			     jne     verifica_digitacao
     187
-    188	009E  EB 0A 90			     jmp     add_primer_carac
-    189
-    190	00A1			     erro5:			     ; tag invalida
-    191	00A1  BA 0136r			     lea     dx, erro5_tag
-    192	00A4  E8 0059			     call    write
-    193	00A7  EB 30 90			     jmp     fim
-    194
-    195	00AA			     add_primer_carac:
-    196	00AA  80 EA 30			     sub     dl, ZERO	     ; tranforma numero	(ASCII)	em inteiro
-    197	00AD  8A C4			     mov     al, AH
-    198	00AF  F6 E2			     mul     dl		     ; multiplica por 10
-    199	00B1  88 16 01ECr		     mov     ticks, dl
-    200
-    201	00B5			     segundo_caractere:
-    202	00B5  8B 1E 015Cr		     mov     bx, handler     ; passa o handler como parametro pelo reg BX
-    203	00B9  BA 015Er			     lea     dx, buffer	     ; passa o buffer como param pelo reg DX
-    204	00BC  E8 0046			     call    fgetc	     ; file getchar
-    205	00BF  8A 16 015Er		     mov     dl, buffer	     ; busca o caractere retornado pelo	fgetc e	move pro reg DL
-    206
-    207				     ; Verifica	se caractere esta entre	0-9
-    208	00C3			     valida_int_2:
-    209				     ; (char < '0') && (char > '9') -> caractere invalido
-    210	00C3  80 FA 30			     cmp     dl, ZERO
-    211	00C6  7C D9			     jl	     erro5
-    212	00C8  80 FA 39			     cmp     dl, NOVE
-    213	00CB  7F D4			     jg	     erro5
-    214	00CD  EB 01 90			     jmp     add_segund_carac
-    215
-    216
-    217	00D0			     add_segund_carac:
-    218	00D0  80 EA 30			     sub     dl, ZERO	      ;	tranforma numero (ASCII) em inteiro
-    219	00D3  00 16 01ECr		     add     ticks, dl
-    220
-    221					     ; REMOVER
-    222					     ; Testes
-    223					     ; mov     dl, ticks
-    224					     ; call    putch
+    188	0088  80 3E 015Er 23		     cmp     buffer, HASHTAG	     ; verifica	se tem '#'
+    189	008D  74 4E			     je	     mudanca_tempo	     ; se sim, muda o tempo de espera para digitar cada	    +
+    190				     caractere
+    191
+    192	008F  E8 013B			     call    espera_tempo	     ; espera...
+    193
+    194	0092  8A 16 015Er		     mov     dl, buffer
+    195	0096  E8 00CC			     call    putch		     ; putchar
+    196
+    197	0099  B4 01			     mov     ah, 01H		     ; kbhit
+    198	009B  CD 16			     int     16h		     ;
+    199	009D  75 0F			     jnz      verifica_digitacao      ;	caso tecla tenha sido pressionada, verifica o que   +
+    200				     houve
+    201
+    202	009F  EB D1			     jmp     loop_leitura
+    203
+    204
+    205	00A1			     etapa7:
+    206	00A1  8B 1E 015Cr		     mov     bx, handler     ; passa arquivo como parametro
+    207	00A5  E8 011B			     call    file_close	     ; fecha arquivo
+    208	00A8  E8 0092			     call    cls	     ; limpa a tela
+    209	00AB  E9 FF62			     jmp     etapa2	     ; volta a etapa 2
+    210
+    211	00AE			     verifica_digitacao:
+    212	00AE  E8 0117			     call    espera_tecla
+    213	00B1  3C 72			     cmp     al, r_min
+    214	00B3  74 12			     je	     jmp_r_pressed
+    215	00B5  3C 52			     cmp     al, R_mai
+    216	00B7  74 0E			     je	     jmp_r_pressed
+    217
+    218	00B9  3C 6E			     cmp     al, n_min
+    219	00BB  74 E4			     je	     etapa7
+    220	00BD  3C 4E			     cmp     al, N_mai
+    221	00BF  74 E0			     je	     etapa7
+    222
+    223	00C1  3C 1B			     cmp     al, ESCP
+    224	00C3  74 0F			     je	     exibe_fim
     225
-    226	00D7  EB 87			     jmp     loop_leitura
+    226	00C5  EB AB			     jmp     loop_leitura
     227
     228
-Turbo Assembler	 Version 3.2	    06/22/19 21:23:14	    Page 5
+Turbo Assembler	 Version 3.2	    06/23/19 01:49:24	    Page 5
 T3_ARQ1.ASM
 
 
 
-    229
-    230
-    231
-    232
-    233				     ; retorno ao DOS com codigo de retorno 0 no AL (fim normal)
-    234	00D9			     fim:
-    235	00D9  8B 1E 015Cr		      mov    bx, handler
-    236	00DD  E8 008B			      call   file_close
-    237	00E0  B8 4C00			      mov    ax,4c00h		; funcao retornar ao DOS no AH
-    238	00E3  CD 21			      int    21h		; chamada do DOS
-    239
+    229	00C7			     jmp_r_pressed:			 ; reinicia a exibicao do arqvuido
+    230	00C7  8B 1E 015Cr		     mov     bx, handler     ; passa arquivo como parametro
+    231	00CB  E8 00F5			     call    file_close	     ; fecha arquivo
+    232	00CE  E8 006C			     call    cls	     ; limpa a tela
+    233	00D1  E9 FF4F			     jmp     r_pressed	     ; abre arquivo, confere erros, leitura, ...
+    234
+    235
+    236	00D4			     exibe_fim:
+    237	00D4  BA 01EEr			     lea     dx, msg_fim
+    238	00D7  E8 007E			     call    write
+    239	00DA  EB 5C 90			     jmp     fim
     240
     241
-    242
-    243
-    244				     ; --------------------- SUBROTIRNAS -----------------------
-    245
-    246				     ; Subrotina que limpa a tela e move cursor	pro inicio (0,0)
-    247	00E5			     cls     proc
-    248				     ; limpa a tela usando atributos de	tela definidos aqui
-    249	00E5			     limpa_tela:
-    250	00E5  B5 00			      mov     ch,0	   ; linha zero	 - canto superior esquerdo
-    251	00E7  B1 00			      mov     cl,0	   ; coluna zero - da janela
-    252	00E9  B6 18			      mov     dh,24	   ; linha 24	 - canto inferior direito
-    253	00EB  B2 4F			      mov     dl,79	   ; coluna 79	 - da janela
-    254	00ED  B7 0B			      mov     bh,ATR_TELA  ; atributo de preenchimento
-    255	00EF  B0 00			      mov     al,0	   ; numero de linhas (zero = toda a janela)
-    256	00F1  B4 06			      mov     ah,6	   ; rola janela para cima
-    257	00F3  CD 10			      int     10h	   ; chamada BIOS (video)
+    242				     ; ------------------- MUDANCA DE TEMPO ---------------------------;
+    243	00DD			     mudanca_tempo:
+    244	00DD  C6 06 01ECr 00		     mov     ticks, 0
+    245	00E2			     primeiro_caractere:
+    246	00E2  8B 1E 015Cr		     mov     bx, handler     ; passa o handler como parametro pelo reg BX
+    247	00E6  BA 015Er			     lea     dx, buffer	     ; passa o buffer como param pelo reg DX
+    248	00E9  E8 0071			     call    fgetc	     ; file getchar
+    249	00EC  8A 16 015Er		     mov     dl, buffer	     ; busca o caractere retornado pelo	fgetc e	move pro reg DL
+    250
+    251				     ; Verifica	se caractere esta entre	0-9
+    252	00F0			     valida_int_1:
+    253				     ; (char < '0') && (char > '9') -> caractere invalido
+    254	00F0  80 FA 30			     cmp     dl, ZERO
+    255	00F3  7C 08			     jl	     erro5
+    256	00F5  80 FA 39			     cmp     dl, NOVE
+    257	00F8  7F 03			     jg	     erro5
     258
-    259				     ; posiciona cursor	no canto superior esquerdo
-    260	00F5			     posiciona_cursor:
-    261	00F5  B6 00			      mov     dh,0	   ; linha zero
-    262	00F7  B2 00			      mov     dl,0	   ; coluna zero
-    263	00F9  B7 00			      mov     bh,0	   ; numero da pagina (zero = primeira)
-    264	00FB  B4 02			      mov     ah,2	   ; define posicao do cursor
-    265	00FD  CD 10			      int     10h	   ; chamada BIOS (video)
-    266	00FF  C3			      ret
-    267	0100			     cls     endp
-    268
-    269	0100			     write   proc
-    270				     ; supoe que dx aponta para	a mensagem
-    271	0100  B4 09			      mov    ah,9		; funcao exibir	mensagem no AH
-    272	0102  CD 21			      int    21h		; chamada do DOS
-    273	0104  C3			      ret
-    274	0105			     write   endp
-    275
-    276				     ; Recebe file handler no BX e recebe ponteiro pro buffer no DX
-    277				     ; Retorna caractere lido no reg DL
-    278	0105			     fgetc   proc
-    279	0105  B4 3F			      mov ah,3fh		 ; le um caractere do arquivo
-    280	0107  B9 0001			      mov cx,1
-    281	010A  CD 21			      int 21h
-    282	010C  C3			      ret
-    283	010D			     fgetc   endp
-    284
-    285
-Turbo Assembler	 Version 3.2	    06/22/19 21:23:14	    Page 6
+    259	00FA  EB 0C 90			     jmp     add_primer_carac
+    260
+    261	00FD			     erro5:			     ; tag invalida
+    262	00FD  BA 0136r			     lea     dx, erro5_tag   ; mostra erro
+    263	0100  E8 0055			     call    write
+    264	0103  E8 00C2			     call    espera_tecla    ; espera tecla
+    265	0106  EB 99			     jmp     etapa7	 ; volta pra etapa 2
+    266
+    267	0108			     add_primer_carac:
+    268	0108  80 EA 30			     sub     dl, ZERO	     ; tranforma numero	(ASCII)	em inteiro
+    269	010B  8A C4			     mov     al, AH
+    270	010D  F6 E2			     mul     dl		     ; multiplica por 10
+    271	010F  88 16 01ECr		     mov     ticks, dl
+    272
+    273	0113			     segundo_caractere:
+    274	0113  8B 1E 015Cr		     mov     bx, handler     ; passa o handler como parametro pelo reg BX
+    275	0117  BA 015Er			     lea     dx, buffer	     ; passa o buffer como param pelo reg DX
+    276	011A  E8 0040			     call    fgetc	     ; file getchar
+    277	011D  8A 16 015Er		     mov     dl, buffer	     ; busca o caractere retornado pelo	fgetc e	move pro reg DL
+    278
+    279				     ; Verifica	se caractere esta entre	0-9
+    280	0121			     valida_int_2:
+    281				     ; (char < '0') && (char > '9') -> caractere invalido
+    282	0121  80 FA 30			     cmp     dl, ZERO
+    283	0124  7C D7			     jl	     erro5
+    284	0126  80 FA 39			     cmp     dl, NOVE
+    285	0129  7F D2			     jg	     erro5
+Turbo Assembler	 Version 3.2	    06/23/19 01:49:24	    Page 6
 T3_ARQ1.ASM
 
 
 
-    286				     ; Recebe caractere	no DL
-    287	010D			     putch   proc
-    288	010D  B8 0000			      mov ax,0
-    289	0110  B4 02			      mov ah,2
-    290	0112  CD 21			      int 21h
-    291	0114  C3			      ret
-    292	0115			     putch   endp
-    293
-    294				     ; Subrotina que recebe string do teclado
-    295				     ; Recebe o	endereco onde a	string sera armazenada no registrador SI
-    296	0115			     gets    proc
-    297	0115  ????		     end_str	 dw	 ?
-    298
-    299	0117  2E: 89 3E	0115r		      mov    end_str, di	 ; copia o endereco da string
-    300	011C			     entrada:
-    301	011C  B4 01			      mov    ah,1
-    302	011E  CD 21			      int    21h		; le um	caractere com eco
+    286	012B  EB 01 90			     jmp     add_segund_carac
+    287
+    288
+    289	012E			     add_segund_carac:
+    290	012E  80 EA 30			     sub     dl, ZERO	      ;	tranforma numero (ASCII) em inteiro
+    291	0131  00 16 01ECr		     add     ticks, dl
+    292
+    293	0135  E9 FF3A			     jmp     loop_leitura
+    294
+    295
+    296				     ;---------------------- FIM ------------------------------
+    297				     ; retorno ao DOS com codigo de retorno 0 no AL (fim normal)
+    298	0138			     fim:
+    299	0138  B8 4C00			     mov    ax,4c00h	    ; funcao retornar ao DOS no	AH
+    300	013B  CD 21			     int    21h		    ; chamada do DOS
+    301
+    302
     303
-    304	0120  3C 1B			      cmp    al,ESCP		; compara com ESCAPE (tecla ESC)
-    305	0122  75 03			      jne    valida_enter
-    306	0124  EB 38 90			      jmp    terminar
+    304
+    305
+    306				     ; --------------------- SUBROTIRNAS -----------------------
     307
-    308	0127			     valida_enter:
-    309	0127  3C 0D			      cmp    al,CR		; compara com carriage return (tecla ENTER)
-    310	0129  74 27			      je     continua
-    311
-    312	012B			     valida_bksp:
-    313	012B  3C 08			      cmp    al,BKSPC		; compara com 'backspace'
-    314	012D  74 05			      je     backspace
-    315
-    316	012F  88 05			      mov    [di],al		; coloca caractere lido	no buffer
-    317	0131  47			      inc    di
-    318	0132  EB E8			      jmp    entrada
-    319
-    320	0134			     backspace:
-    321	0134  2E: 3B 3E	0115r		      cmp    di,end_str
-    322	0139  75 08			      jne    adiante
-    323	013B  B2 20			      mov    dl,' '		 ; avanca cursor na tela
-    324	013D  B4 02			      mov    ah,2
-    325	013F  CD 21			      int    21h
-    326	0141  EB D9			      jmp    entrada
-    327	0143			     adiante:
-    328	0143  B2 20			      mov    dl,' '		 ; apaga ultimo	caractere digitado
-    329	0145  B4 02			      mov    ah,2
-    330	0147  CD 21			      int    21h
-    331	0149  B2 08			      mov    dl,BKSPC		 ; recua cusor na tela
-    332	014B  B4 02			      mov    ah,2
-    333	014D  CD 21			      int    21h
-    334	014F  4F			      dec    di
-    335	0150  EB CA			      jmp    entrada
-    336
-    337	0152			     continua:
-    338	0152  C6 05 00			      mov    byte ptr [di],0	 ; forma string	ASCIIZ com o nome do arquivo
-    339	0155  B2 0A			      mov    dl,LF		 ; escreve LF na tela
-    340	0157  B4 02			      mov    ah,2
-    341	0159  CD 21			      int    21h
-    342	015B  EB 06 90			      jmp    retorna
-Turbo Assembler	 Version 3.2	    06/22/19 21:23:14	    Page 7
+    308				     ; Subrotina que limpa a tela e move cursor	pro inicio (0,0)
+    309	013D			     cls     proc
+    310				     ; limpa a tela usando atributos de	tela definidos aqui
+    311	013D			     limpa_tela:
+    312	013D  B5 00			     mov     ch,0	  ; linha zero	- canto	superior esquerdo
+    313	013F  B1 00			     mov     cl,0	  ; coluna zero	- da janela
+    314	0141  B6 18			     mov     dh,24	  ; linha 24	- canto	inferior direito
+    315	0143  B2 4F			     mov     dl,79	  ; coluna 79	- da janela
+    316	0145  B7 0B			     mov     bh,ATR_TELA  ; atributo de	preenchimento
+    317	0147  B0 00			     mov     al,0	  ; numero de linhas (zero = toda a janela)
+    318	0149  B4 06			     mov     ah,6	  ; rola janela	para cima
+    319	014B  CD 10			     int     10h	  ; chamada BIOS (video)
+    320
+    321				     ; posiciona cursor	no canto superior esquerdo
+    322	014D			     posiciona_cursor:
+    323	014D  B6 00			     mov     dh,0	  ; linha zero
+    324	014F  B2 00			     mov     dl,0	  ; coluna zero
+    325	0151  B7 00			     mov     bh,0	  ; numero da pagina (zero = primeira)
+    326	0153  B4 02			     mov     ah,2	  ; define posicao do cursor
+    327	0155  CD 10			     int     10h	  ; chamada BIOS (video)
+    328	0157  C3			     ret
+    329	0158			     cls     endp
+    330
+    331	0158			     write   proc
+    332				     ; supoe que dx aponta para	a mensagem
+    333	0158  B4 09			      mov    ah,9		; funcao exibir	mensagem no AH
+    334	015A  CD 21			      int    21h		; chamada do DOS
+    335	015C  C3			      ret
+    336	015D			     write   endp
+    337
+    338				     ; Recebe file handler no BX e recebe ponteiro pro buffer no DX
+    339				     ; Retorna caractere lido no reg DL
+    340	015D			     fgetc   proc
+    341	015D  B4 3F			     mov ah,3fh			; le um	caractere do arquivo
+    342	015F  B9 0001			     mov cx,1
+Turbo Assembler	 Version 3.2	    06/23/19 01:49:24	    Page 7
 T3_ARQ1.ASM
 
 
 
-    343
-    344	015E			     terminar:
-    345	015E  B8 4C00			      mov    ax,4c00h		 ; funcao retornar ao DOS no AH
-    346									 ; codigo de retorno 0 no AL
-    347	0161  CD 21			      int    21h		 ; chamada do DOS
-    348
-    349	0163			     retorna:
-    350	0163  C3			      ret
-    351	0164			     gets    endp
-    352
-    353				     ; Abre arquivo para leitura
-    354				     ; TODO -> Comentario
-    355	0164			     file_open	     proc
-    356	0164  B4 3D			      mov    ah,3dh
-    357	0166  B0 00			      mov    al,0
-    358	0168  CD 21			      int    21h
-    359
-    360	016A  C3			      ret
-    361	016B			     file_open	     endp
-    362
-    363	016B			     file_close	     proc
-    364	016B  B4 3E			      mov ah,3eh		 ; fecha arquivo
-    365	016D  CD 21			      int 21h
-    366
-    367	016F  C3			      ret
-    368	0170			     file_close	     endp
+    343	0162  CD 21			     int 21h
+    344	0164  C3			     ret
+    345	0165			     fgetc   endp
+    346
+    347
+    348				     ; Recebe caractere	no DL
+    349	0165			     putch   proc
+    350	0165  B8 0000			      mov ax,0
+    351	0168  B4 02			      mov ah,2
+    352	016A  CD 21			      int 21h
+    353	016C  C3			      ret
+    354	016D			     putch   endp
+    355
+    356				     ; Subrotina que recebe string do teclado
+    357				     ; Recebe o	endereco onde a	string sera armazenada no registrador SI
+    358	016D  ????		     end_str	 dw	 ?
+    359	016F			     gets    proc
+    360
+    361	016F  2E: 89 3E	016Dr		     mov    end_str, di		; copia	o endereco da string
+    362	0174			     entrada:
+    363	0174  B4 01			     mov    ah,1
+    364	0176  CD 21			     int    21h		       ; le um caractere com eco
+    365
+    366	0178  3C 1B			     cmp    al,ESCP	       ; compara com ESCAPE (tecla ESC)
+    367	017A  75 03			     jne    valida_enter
+    368	017C  EB 38 90			     jmp    terminar
     369
-    370	0170			     espera_tecla    proc
-    371	0170  B4 00			      mov    ah,0		; funcao esperar tecla no AH
-    372	0172  CD 16			      int    16h		; chamada do DOS
-    373	0174  C3			      ret
-    374	0175			     espera_tecla    endp
-    375
-    376				     ; Recebe tempo (em	ticks) no registrador AL
-    377				     ; Recebe tempo inicialtempo_inicial no registrador	DL
-    378	0175			     espera_tempo    proc
-    379
-    380				     ; -- variaveis locais
-    381	0175  00		     ticks_local     db	     0
-    382	0176  00		     tempo_i_local   db	     0
-    383
-    384				     ; antes de	entrar no loop
-    385	0177			     pre_loop:
-    386	0177  2E: A2 0175r		     mov     ticks_local, al	     ; salva o numero de ticks
-    387	017B  2E: 88 16	0176r		     mov     tempo_i_local, dl	     ; salva o tempo inicial
-    388
-    389	0180			     loop_espera:
-    390	0180  B4 00			     mov     ah, 00h
-    391	0182  CD 1A			     int     1ah		 ; chama o gettime do DOS
-    392	0184  2E: 2A 16	0176r		     sub     dl, tempo_i_local	 ; dl <- tempo_final (dl) - tempo_inicial
-    393
-    394	0189  38 16 01ECr		     cmp     ticks, dl		 ;
-    395	018D  7E 02			     jle     retorna_espera	 ; ticks <= delta(tempo) -> retorna
-    396	018F  EB EF			     jmp     loop_espera
-    397
-    398	0191			     retorna_espera:
-    399	0191  C3			     ret
-Turbo Assembler	 Version 3.2	    06/22/19 21:23:14	    Page 8
+    370	017F			     valida_enter:
+    371	017F  3C 0D			     cmp    al,CR	       ; compara com carriage return (tecla ENTER)
+    372	0181  74 27			     je	    continua
+    373
+    374	0183			     valida_bksp:
+    375	0183  3C 08			     cmp    al,BKSPC	       ; compara com 'backspace'
+    376	0185  74 05			     je	    backspace
+    377
+    378	0187  88 05			     mov    [di],al	       ; coloca	caractere lido no buffer
+    379	0189  47			     inc    di
+    380	018A  EB E8			     jmp    entrada
+    381
+    382	018C			     backspace:
+    383	018C  2E: 3B 3E	016Dr		     cmp    di,end_str
+    384	0191  75 08			     jne    adiante
+    385	0193  B2 20			     mov    dl,' '		; avanca cursor	na tela
+    386	0195  B4 02			     mov    ah,2
+    387	0197  CD 21			     int    21h
+    388	0199  EB D9			     jmp    entrada
+    389	019B			     adiante:
+    390	019B  B2 20			     mov    dl,' '		; apaga	ultimo caractere digitado
+    391	019D  B4 02			     mov    ah,2
+    392	019F  CD 21			     int    21h
+    393	01A1  B2 08			     mov    dl,BKSPC		; recua	cusor na tela
+    394	01A3  B4 02			     mov    ah,2
+    395	01A5  CD 21			     int    21h
+    396	01A7  4F			     dec    di
+    397	01A8  EB CA			     jmp    entrada
+    398
+    399	01AA			     continua:
+Turbo Assembler	 Version 3.2	    06/23/19 01:49:24	    Page 8
 T3_ARQ1.ASM
 
 
 
-    400	0192			     espera_tempo endp
-    401
-    402				     ; Verifica	se a string esta vazia
-    403				     ; TODO
-    404	0192			     str_empty	     proc
-    405	0192  C3			     ret
-    406	0193			     str_empty	     endp
-    407
-    408
-    409	0193			     codigo   ends
+    400	01AA  C6 05 00			     mov    byte ptr [di],0	; forma	string ASCIIZ com o nome do arquivo
+    401	01AD  B2 0A			     mov    dl,LF		; escreve LF na	tela
+    402	01AF  B4 02			     mov    ah,2
+    403	01B1  CD 21			     int    21h
+    404	01B3  EB 06 90			     jmp    retorna
+    405
+    406	01B6			     terminar:
+    407	01B6  B8 4C00			     mov    ax,4c00h		; funcao retornar ao DOS no AH
+    408									; codigo de retorno 0 no AL
+    409	01B9  CD 21			     int    21h			; chamada do DOS
     410
-    411				     ; a diretiva a seguir indica o fim	do codigo fonte	(ultima	linha do arquivo)
-    412				     ; e informa que o programa	deve comecar a execucao	no rotulo "inicio"
-    413					      end    inicio
-Turbo Assembler	 Version 3.2	    06/22/19 21:23:14	    Page 9
+    411	01BB			     retorna:
+    412	01BB  C3			     ret
+    413	01BC			     gets    endp
+    414
+    415				     ; Abre arquivo para leitura
+    416				     ; TODO -> Comentario
+    417	01BC			     file_open	     proc
+    418	01BC  B4 3D			     mov    ah,3dh
+    419	01BE  B0 00			     mov    al,0
+    420	01C0  CD 21			     int    21h
+    421
+    422	01C2  C3			     ret
+    423	01C3			     file_open	     endp
+    424
+    425	01C3			     file_close	     proc
+    426	01C3  B4 3E			     mov ah,3eh			; fecha	arquivo
+    427	01C5  CD 21			     int 21h
+    428
+    429	01C7  C3			     ret
+    430	01C8			     file_close	     endp
+    431
+    432	01C8			     espera_tecla    proc
+    433	01C8  B4 00			     mov    ah,0	       ; funcao	esperar	tecla no AH
+    434	01CA  CD 16			     int    16h		       ; chamada do DOS
+    435	01CC  C3			     ret
+    436	01CD			     espera_tecla    endp
+    437
+    438
+    439	01CD			     espera_tempo    proc
+    440	01CD			     loop_espera:
+    441	01CD  B4 00			     mov     ah, 00h
+    442	01CF  CD 1A			     int     1ah	     ; chama o gettime do DOS
+    443	01D1  2A 16 01EDr		     sub     dl, tempo_i     ; dl <- tempo_final (dl) -	tempo_inicial
+    444
+    445	01D5  38 16 01ECr		     cmp     ticks, dl	     ;
+    446	01D9  7F F2			     jg	     loop_espera     ; while (ticks > delta(t))
+    447	01DB  C3			     ret
+    448	01DC			     espera_tempo endp
+    449	01DC			     codigo   ends
+    450
+    451				     ; a diretiva a seguir indica o fim	do codigo fonte	(ultima	linha do arquivo)
+    452				     ; e informa que o programa	deve comecar a execucao	no rotulo "inicio"
+    453					      end    inicio
+Turbo Assembler	 Version 3.2	    06/23/19 01:49:24	    Page 9
 Symbol Table
 
 
@@ -459,92 +499,101 @@ Symbol Table
 
 Symbol Name			  Type	 Value
 
-??DATE				  Text	 "06/22/19"
+??DATE				  Text	 "06/23/19"
 ??FILENAME			  Text	 "T3_ARQ1 "
-??TIME				  Text	 "21:23:14"
+??TIME				  Text	 "01:49:24"
 ??VERSION			  Number 0314
 @CPU				  Text	 0101H
 @CURSEG				  Text	 CODIGO
 @FILENAME			  Text	 T3_ARQ1
 @WORDSIZE			  Text	 2
-ABRE_ARQUIVO			  Near	 CODIGO:0015
-ADD_PRIMER_CARAC		  Near	 CODIGO:00AA
-ADD_SEGUND_CARAC		  Near	 CODIGO:00D0
-ADIANTE				  Near	 CODIGO:0143
+ABRE_ARQUIVO			  Near	 CODIGO:0010
+ADD_PRIMER_CARAC		  Near	 CODIGO:0108
+ADD_SEGUND_CARAC		  Near	 CODIGO:012E
+ADIANTE				  Near	 CODIGO:019B
 ARQUIVO				  Byte	 DADOS:007F
-ARQUIVO_ABERTO			  Near	 CODIGO:005D
+ARQUIVO_ABERTO			  Near	 CODIGO:0062
 ATR_TELA			  Number 000B
-BACKSPACE			  Near	 CODIGO:0134
+BACKSPACE			  Near	 CODIGO:018C
 BKSPC				  Number 0008
 BUFFER				  Byte	 DADOS:015E
-CLS				  Near	 CODIGO:00E5
-CONTINUA			  Near	 CODIGO:0152
+CLS				  Near	 CODIGO:013D
+CONTINUA			  Near	 CODIGO:01AA
 CR				  Number 000D
-END_STR				  Word	 CODIGO:0115
-ENTRADA				  Near	 CODIGO:011C
-ERRO1				  Near	 CODIGO:0043
+END_STR				  Word	 CODIGO:016D
+ENTRADA				  Near	 CODIGO:0174
+ERRO1				  Near	 CODIGO:0048
 ERRO1_ARQ			  Byte	 DADOS:00C2
-ERRO2				  Near	 CODIGO:0049
+ERRO2				  Near	 CODIGO:004E
 ERRO2_ARQ			  Byte	 DADOS:00E4
-ERRO3				  Near	 CODIGO:004F
+ERRO3				  Near	 CODIGO:0054
 ERRO3_ARQ			  Byte	 DADOS:0102
-ERRO4				  Near	 CODIGO:0055
+ERRO4				  Near	 CODIGO:005A
 ERRO4_ARQ			  Byte	 DADOS:011D
-ERRO5				  Near	 CODIGO:00A1
+ERRO5				  Near	 CODIGO:00FD
 ERRO5_TAG			  Byte	 DADOS:0136
-ERRO_ABRIR_ARQUIVO		  Near	 CODIGO:002F
+ERRO_ABRIR_ARQUIVO		  Near	 CODIGO:0034
 ESCP				  Number 001B
-ESCREVE_ERRO			  Near	 CODIGO:0058
-ESPERA_TECLA			  Near	 CODIGO:0170
-ESPERA_TEMPO			  Near	 CODIGO:0175
+ESCREVE_ERRO			  Near	 CODIGO:005D
+ESPERA_TECLA			  Near	 CODIGO:01C8
+ESPERA_TEMPO			  Near	 CODIGO:01CD
+ETAPA2				  Near	 CODIGO:0010
+ETAPA3				  Near	 CODIGO:0062
+ETAPA4				  Near	 CODIGO:0072
+ETAPA7				  Near	 CODIGO:00A1
+EXIBE_FIM			  Near	 CODIGO:00D4
 FEITO				  Byte	 DADOS:01DE
-FGETC				  Near	 CODIGO:0105
-FILE_CLOSE			  Near	 CODIGO:016B
-FILE_OPEN			  Near	 CODIGO:0164
-FIM				  Near	 CODIGO:00D9
-GETS				  Near	 CODIGO:0115
+FGETC				  Near	 CODIGO:015D
+FILE_CLOSE			  Near	 CODIGO:01C3
+FILE_OPEN			  Near	 CODIGO:01BC
+FIM				  Near	 CODIGO:0138
+GETS				  Near	 CODIGO:016F
 HANDLER				  Word	 DADOS:015C
 HASHTAG				  Number 0023
 IDENT				  Byte	 DADOS:0033
 INICIO				  Near	 CODIGO:0000
-LF				  Number 000A
-LIMPA_TELA			  Near	 CODIGO:00E5
-LOOP_ESPERA			  Near	 CODIGO:0180
-LOOP_LEITURA			  Near	 CODIGO:0060
-MSG_ARQ				  Byte	 DADOS:0064
-MSG_INI				  Byte	 DADOS:0000
-Turbo Assembler	 Version 3.2	    06/22/19 21:23:14	    Page 10
+JMP_EXIBE_FIM			  Near	 CODIGO:0031
+Turbo Assembler	 Version 3.2	    06/23/19 01:49:24	    Page 10
 Symbol Table
 
 
 
-MUDANCA_TEMPO			  Near	 CODIGO:0086
+JMP_R_PRESSED			  Near	 CODIGO:00C7
+LF				  Number 000A
+LIMPA_TELA			  Near	 CODIGO:013D
+LOOP_ESPERA			  Near	 CODIGO:01CD
+LOOP_LEITURA			  Near	 CODIGO:0072
+MSG_ARQ				  Byte	 DADOS:0064
+MSG_FIM				  Byte	 DADOS:01EE
+MSG_INI				  Byte	 DADOS:0000
+MUDANCA_TEMPO			  Near	 CODIGO:00DD
 NOVE				  Number 0039
 NULL				  Number 0000
-POSICIONA_CURSOR		  Near	 CODIGO:00F5
-PRE_LOOP			  Near	 CODIGO:0177
-PRIMEIRO_CARACTERE		  Near	 CODIGO:0086
+N_MAI				  Number 004E
+N_MIN				  Number 006E
+POSICIONA_CURSOR		  Near	 CODIGO:014D
+PRIMEIRO_CARACTERE		  Near	 CODIGO:00E2
 PROGRAMA			  Near	 CODIGO:0007
-PUTCH				  Near	 CODIGO:010D
-RETORNA				  Near	 CODIGO:0163
-RETORNA_ESPERA			  Near	 CODIGO:0191
-SEGUNDO_CARACTERE		  Near	 CODIGO:00B5
-STR_EMPTY			  Near	 CODIGO:0192
+PUTCH				  Near	 CODIGO:0165
+RETORNA				  Near	 CODIGO:01BB
+R_MAI				  Number 0052
+R_MIN				  Number 0072
+R_PRESSED			  Near	 CODIGO:0023
+SEGUNDO_CARACTERE		  Near	 CODIGO:0113
 TEMPO_I				  Byte	 DADOS:01ED
-TEMPO_I_LOCAL			  Byte	 CODIGO:0176
-TERMINAR			  Near	 CODIGO:015E
+TERMINAR			  Near	 CODIGO:01B6
 TICKS				  Byte	 DADOS:01EC
-TICKS_LOCAL			  Byte	 CODIGO:0175
-VALIDA_BKSP			  Near	 CODIGO:012B
-VALIDA_ENTER			  Near	 CODIGO:0127
-VALIDA_INT_1			  Near	 CODIGO:0094
-VALIDA_INT_2			  Near	 CODIGO:00C3
-WRITE				  Near	 CODIGO:0100
+VALIDA_BKSP			  Near	 CODIGO:0183
+VALIDA_ENTER			  Near	 CODIGO:017F
+VALIDA_INT_1			  Near	 CODIGO:00F0
+VALIDA_INT_2			  Near	 CODIGO:0121
+VERIFICA_DIGITACAO		  Near	 CODIGO:00AE
+WRITE				  Near	 CODIGO:0158
 ZERO				  Number 0030
 
 Groups & Segments		  Bit Size Align  Combine Class
 
-CODIGO				  16  0193 Para	  none
-DADOS				  16  01EE Para	  none
+CODIGO				  16  01DC Para	  none
+DADOS				  16  0226 Para	  none
 PILHA				  16  0100 Para	  Stack
 
