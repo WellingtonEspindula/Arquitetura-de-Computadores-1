@@ -8,7 +8,13 @@
 ;
 ; Versao: 2019.1.0
 ;
-; Resumo: TODO
+; Resumo: O presente trabalho tem por objetivo implementar,
+; em Assembly nos processadores Intel 8086, um programa que
+; le arquivos de texto e exibe os caracteres lidos na tela,
+; um de cada vez, dado que a velocidade de exibicao eh variavel.
+; A velocidade de exibicao, inicialmente 0, eh alterada por 
+; "tags" no texto lido. Assim, as tags sao sequencias de 3
+; caracteres iniciadas por '#' e seguidos de 2 digitos decimais.
 ;
 ;************************************************************************************
 
@@ -64,7 +70,9 @@ inicio:  ; CS e IP sao inicializados com este endereco
          mov    es,ax    ; idem em ES
 ; fim da carga inicial dos registradores de segmento
 
-; inicio do programa
+
+
+; -------------- INICIO DO PROGRAMA ------------------------
 programa:
         call    cls             ; limpa a tela
         lea     dx, msg_ini     ; escreve mensagens iniciais
@@ -90,7 +98,7 @@ r_pressed:
 
 
 jmp_exibe_fim:
-        jmp     exibe_fim
+        jmp     exibe_fim       ; pula pro fim
 
 
 erro_abrir_arquivo:             ; aqui trata o erro na abertura de arquivo
@@ -121,6 +129,8 @@ escreve_erro:                   ; escreve mensagem de erros
         call    write
         jmp     abre_arquivo
 
+
+; ---------------- ARQUIVO ABERTO -----------------------
 etapa3:
 arquivo_aberto:
         call    cls                     ; limpa a tela antes de comecar a exibir o arquivo
@@ -164,19 +174,19 @@ etapa7:
         jmp     etapa2          ; volta a etapa 2
 
 verifica_digitacao:
-        call    espera_tecla
-        cmp     al, r_min
-        je      jmp_r_pressed
-        cmp     al, R_mai
-        je      jmp_r_pressed
+        call    getchar         ; getchar()
+        cmp     al, r_min       ; char == 'r'
+        je      jmp_r_pressed   ; reinicia leitura
+        cmp     al, R_mai       ; char == 'R'
+        je      jmp_r_pressed   ; idem
 
-        cmp     al, n_min
-        je      etapa7
-        cmp     al, N_mai
-        je      etapa7
+        cmp     al, n_min       ; char == 'n'
+        je      etapa7          ; pula pra etapa 7 (limpa tela, fecha arquivo, pede arquivo)
+        cmp     al, N_mai       ; char == 'N'
+        je      etapa7          ; idem
 
-        cmp     al, ESCP
-        je      exibe_fim
+        cmp     al, ESCP        ; char == ESC
+        je      exibe_fim       ; pula pro fim
         
         jmp     loop_leitura
 
@@ -188,13 +198,13 @@ jmp_r_pressed:                  ; reinicia a exibicao do arqvuido
         jmp     r_pressed       ; abre arquivo, confere erros, leitura, ...
 
 
-exibe_fim:
-        lea     dx, msg_fim
-        call    write
-        jmp     fim
+exibe_fim:                      ; exibe mensagem de fim e termina o programa
+        lea     dx, msg_fim     ; move mensagem de fim pro reg DX
+        call    write           ; escreve na tela
+        jmp     fim             ; encerra
 
 
-; ------------------- MUDANCA DE TEMPO ---------------------------;
+; ------------------- MUDANCA DE TEMPO --------------------------- ;
 mudanca_tempo:        
         mov     ticks, 0
 primeiro_caractere:
@@ -216,8 +226,8 @@ valida_int_1:
 erro5:                          ; tag invalida
         lea     dx, erro5_tag   ; mostra erro
         call    write
-        call    espera_tecla    ; espera tecla
-        jmp     etapa7      ; volta pra etapa 2
+        call    getchar         ; getchar()
+        jmp     etapa7          ; limpa tela, fecha arquivoo e volta pra etapa 2
 
 add_primer_carac:
         sub     dl, ZERO        ; tranforma numero (ASCII) em inteiro
@@ -260,6 +270,7 @@ fim:
 
 ; --------------------- SUBROTIRNAS -----------------------
 
+;------------- CLS ---------------
 ; Subrotina que limpa a tela e move cursor pro inicio (0,0)
 cls     proc
 ; limpa a tela usando atributos de tela definidos aqui
@@ -283,13 +294,15 @@ posiciona_cursor:
         ret
 cls     endp
 
+;------------- WRITE ---------------
+; Recebe string (endereco) da mensagem no reg DX
 write   proc
-; supoe que dx aponta para a mensagem
          mov    ah,9               ; funcao exibir mensagem no AH
          int    21h                ; chamada do DOS
          ret
 write   endp
 
+;------------- FGETC -------------------
 ; Recebe file handler no BX e recebe ponteiro pro buffer no DX
 ; Retorna caractere lido no reg DL
 fgetc   proc
@@ -300,6 +313,8 @@ fgetc   proc
 fgetc   endp
 
 
+;------------- PUTCH -----------
+; Escreve caractere na tela
 ; Recebe caractere no DL
 putch   proc
          mov ax,0
@@ -308,8 +323,11 @@ putch   proc
          ret
 putch   endp
 
-; Subrotina que recebe string do teclado
+
+;------------- GETS --------------------
+; Subrotina que recebe string do teclado, tratando backspace e enter
 ; Recebe o endereco onde a string sera armazenada no registrador SI
+; Devolve o que foi lido na string entrada
 end_str     dw      ?
 gets    proc
 
@@ -317,10 +335,6 @@ gets    proc
 entrada: 
         mov    ah,1
         int    21h                ; le um caractere com eco
-
-        cmp    al,ESCP            ; compara com ESCAPE (tecla ESC)
-        jne    valida_enter
-        jmp    terminar 
          
 valida_enter:
         cmp    al,CR              ; compara com carriage return (tecla ENTER)
@@ -358,17 +372,15 @@ continua:
         int    21h
         jmp    retorna
 
-terminar:
-        mov    ax,4c00h            ; funcao retornar ao DOS no AH
-                                   ; codigo de retorno 0 no AL
-        int    21h                 ; chamada do DOS
-
 retorna:
         ret
 gets    endp
 
+;------------- FILE OPEN -------
 ; Abre arquivo para leitura 
-; TODO -> Comentario
+; Recebe string (endereco) do arquivo no reg DX
+; Retorna handler em AX.
+; CF = 1 se arquivo nao foi aberto adequadamente
 file_open       proc
         mov    ah,3dh
         mov    al,0
@@ -377,6 +389,10 @@ file_open       proc
         ret
 file_open       endp
 
+
+;------------- FILE CLOSE ------
+; Fecha arquivo
+; Recebe handler no reg BX
 file_close      proc
         mov ah,3eh                 ; fecha arquivo
         int 21h
@@ -384,13 +400,18 @@ file_close      proc
         ret
 file_close      endp
 
-espera_tecla    proc
+;------------- GETCHAR --------
+; Pega caractere do teclado
+; Retorna o codigo ASCII do caractere em AL
+; Retorna codigo de varredura em AH
+getchar    proc
         mov    ah,0               ; funcao esperar tecla no AH
         int    16h                ; chamada do DOS
         ret
-espera_tecla    endp
+getchar    endp
 
-
+;------------- ESPERA_TEMPO ---------
+; Espera o tempo (ticks) usando funcoes do DOS
 espera_tempo    proc
 loop_espera:
         mov     ah, 00h             
