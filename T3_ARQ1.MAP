@@ -1,9 +1,0 @@
-
- Start  Stop   Length Name               Class
-
- 00000H 00225H 00226H DADOS              
- 00230H 0032FH 00100H PILHA              
- 00330H 0050BH 001DCH CODIGO             
-
-Program entry point at 0033:0000
-
