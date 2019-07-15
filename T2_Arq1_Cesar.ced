@@ -1,0 +1,505 @@
+    
+; TRABALHO 2 - ARQUITETURA DE COMPUTADORES 1
+; UNIVERSIDADE FEDERAL DO RIO GRANDE DO SUL
+;
+; Autor: Wellington Espindula (wmespindula@inf.ufrgs.br)
+; #: 00302367
+;
+; Resumo: O presente trabalho tem por objetivo implementar, na máquina teórica Cesar, um programa 
+; para medir o tempo de reação e velocidade de digitação do usuário. O programa irá exibir sequências
+; de caracteres formadas por 8 letras (maiúsculas e/ou minúsculas) e dígitos decimais e o usuário 
+; deverá digitar a mesma sequência no menor tempo possível, sem erros.
+;
+
+
+; Constantes com os codigos das funcoes do sistema (ver enunciado)
+kbhit:    equ 0
+getchar:  equ 1
+gettime:  equ 2
+putchar:  equ 3
+putmsg:   equ 4
+
+;------------------------------------------------------------------------------
+; Definição de endereços necessários para o desenvolvimento da aplicação
+;------------------------------------------------------------------------------
+_APP:		equ	h0100		; inicio da APP
+_SISTEMA:	equ	h0080		; area das syscall
+_VARS:		equ	h400		; variáveis da aplicação
+_WORDS:		equ	h500		; mensagens e tabela de palavras
+_SUBROTINAS:	equ	h800		; espaco reservado para subrotinas auxiliares
+
+org _VARS
+num_carac_dig:	dw 0			; numero de caracteres digitados pelo usuario no display
+tempo_inicial:	dw 0			; tempo do jogo quando começou
+delta_tempo:	dw 0			; tempo de duracao do jogo
+palavra_atual:	dab '        ',0	; palavra usada no jogo, sorteada no início de cada partida
+palavra_dig:	dab '        ',0	; palavra digitada pelo usuário
+
+org _WORDS
+msg_iniciais: 	dab 'Wellington Espindula #00302367      ',0
+		dab 'Escreva a sequencia no tempo minimo ',0
+		dab 'Pronto? Aperte enter para comecar   ',0
+msg_final:	dab 'Novo jogo (J/j) ou terminar (T/t)',0
+msg_final2:	dab 'Ate mais, e obrigado pelo jogo!',0
+dois_p_spc:	dab ' : ',0
+certo_msg:	dab ' - certo, ',0
+errou_msg:	dab ' - errou, ',0
+seg_msg:	dab 'seg',0
+cls:		dab '                                    ',0	; visor em branco
+tab_seqs:	dab 'Uf4kkSRS'		; índice 0
+		dab 'P8DXXFlb'		; índice 1 
+		dab '2Mk8AIdx'		; índice 2 
+		dab 'TXpX2Dyy'		; índice 3 
+		dab 'tPvGcMLb'		; índice 4 
+		dab 'rm0gCXrZ'		; índice 5 
+		dab 'wmdsFa4x'		; índice 6 
+		dab '4SEzGKEi'		; índice 7 
+		dab 'FoRAbOzo'		; índice 8 
+		dab 'BIcL4bN3'		; índice 9 
+		dab 'BZy0S8kt'		; índice 10
+		dab 'bestgame'		; índice 11
+		dab 'ExfqvhGF'		; índice 12
+		dab 'xYBSkdNW'		; índice 13
+		dab '5RM4AHmY'		; índice 14
+		dab 'Y3gWqsfr'		; índice 15
+
+
+org _APP
+inicio:	
+	MOV #msg_iniciais, R3		; R3 = end_msg_inicias
+	MOV #3, R2			; laco para mostrar as mensagens
+
+exibe_mensagens:	
+	MOV #putmsg, R5			; imprime a mensagem na tela
+	MOV R3, R0			; R0 = mensagem[i]
+	CLR R1				; R1 = 0. Cursor na primeira posicao do visor
+	JSR R7, _SISTEMA		; chama a funcao
+	
+	JSR R7, _S_ESPERA_ENTER		; espera o usuario digitar enter
+	JSR R7, _S_CLS			; limpa a tela
+
+	ADD #37, R3			; Incrementa R3 para pegar o endereco da proxima mensagem
+
+	SOB R2, exibe_mensagens		; controle de laco
+
+; APOS EXIBIR AS MENSAGENS, VAI PARA O JOGO
+
+jogo:
+	JSR R7, _S_CLS			; limpa a tela
+
+limpa_variaveis_jogo:			; limpa as variaveis do jogo
+	CLR R1
+	CLR R2
+	CLR R3
+	CLR R4
+	CLR R5
+	CLR num_carac_dig
+	CLR tempo_inicial
+	CLR delta_tempo
+
+limpa_palavra_dig:			; limpa a palavra digitada
+	MOV #palavra_dig, R0
+	CLR (R0)+
+	CLR (R0)+
+	CLR (R0)+
+	CLR (R0)+
+
+limpa_palavra_atual:			; limpa a palavra selecionada pelo programa
+	MOV #palavra_atual, R0
+	CLR (R0)+
+	CLR (R0)+
+	CLR (R0)+
+	CLR (R0)+
+	CLR R0				; limpa R0
+
+palavra_aleatoria:			; gera palavra aleatoria
+	MOV #gettime, R5		; R0 = gettime()
+	JSR R7,_SISTEMA			
+	AND #15, R0			; faz uma mascara para selecionar o 4 bits menos significativos do tempo pego
+	ASL R0				; multiplica por 8 shiftando 3x
+	ASL R0
+	ASL R0
+
+cp_palavra_transf:			; copia a palavra aleatoria para a "area de transeferencia" (palavra_atual)
+	MOV #4, R3			; usa R3 como contador e itera 4 vezes
+
+	ADD #tab_seqs, R0		; R0 = (8*num_aleatorio) (R0) + end_tab_seqs
+	MOV #palavra_atual, R1		; R1 = end_palavra_atual
+
+
+loop_cp:				; copia a palavra que esta apontada pelo R0 para a palavra_atual
+	MOV (R0)+, (R1)+		; copia de dois em dois bytes e incrementa os ponteiros
+	SOB R3, loop_cp			; controle de laco
+
+puts:	
+	MOV #putmsg, R5			; modo putmsg
+	MOV #palavra_atual, R0		; imprime a palavra selcionada no visor
+	CLR R1				; começa a escrever na primeira posição do visor
+	JSR R7, _SISTEMA
+
+	MOV #putmsg, R5			; imprime ' : ' dps da palavra selecionada
+	MOV #dois_p_spc, R0
+	MOV #8, R1
+	JSR R7, _SISTEMA
+
+	MOV #putchar, R5		; escreve cursor logo apos a palavra e ' : '
+	MOV #'_', R0			; R0 = '_', ou seja, cursor
+	MOV #11, R1			; poe cursor na posicao do primeiro carac a ser inserido
+	JSR R7, _SISTEMA		; chama a funcao
+
+
+inicia_entrada:
+	MOV #gettime, R5		; Pega o tempo inicial
+	JSR R7, _SISTEMA		; R0 = tempo
+	MOV R0, tempo_inicial		; tempo_inicial = R0
+	
+houve_entrada:
+	MOV #kbhit, R5			; while (kbhit())
+	JSR R7, _SISTEMA
+	TST R0				; R0 == 0 ?
+	BEQ houve_entrada		; se sim, verifica novamente
+					; se nao, trata a entrada
+trata_entrada:
+	MOV #getchar, R5		; r0 = getchar()
+	JSR R7, _SISTEMA		; chama a funcao
+
+
+; Verifica se o caractere digitado é alfanumérico	
+; ( ((RO >= 48) && (R0 <= 57)) || ((R0 >= 65) && (R0 <= 90)) || ((R0 >= 97) && (R0 <= 122)) ) -> add_carac
+comparacao_1:
+	CMP #'0', R0			; R0 >= 48 (0) ?
+	BGT comparacao_2		; se nao, pula para a proxima comparacao
+
+	CMP #'9', R0			; R0 <= 57 (9) ?
+	BLT comparacao_2		; se nao, pula para a proxima comparacao
+	
+	JMP add_carac
+	
+comparacao_2:
+	CMP #'A', R0			; R0 >= 65 (A)
+	BGT comparacao_3		; se nao, pula para a proxima comparacao
+
+	CMP #'Z', R0			; R0 <= 90 (Z)
+	BLT comparacao_3		; se nao, pula para a proxima comparacao
+
+	JMP add_carac
+	
+comparacao_3:
+	CMP #'a', R0			; R0 >= 97 (a)
+	BGT carac_fora_escopo		; se nao, pula para a proxima comparacao
+
+	CMP #'z', R0			; R0 <= 122 (z)
+	BLT carac_fora_escopo		; se nao, pula para a proxima comparacao
+	
+	JMP add_carac			; caso a condicao tenha sido satisfeita, adiciona caractere na string da palavra digitada e no visor
+
+; Verifica se é um enter ou um backspace
+; Caso o caractere esteja fora do escopo dos alfanumericos ou não seja um enter/backspc, nao faz nada
+carac_fora_escopo:
+	CMP #8, R0			; verifica se o usuário entrou com backspace
+	BEQ bkspc			; se sim, pula pra bkspc
+	CMP #13, R0			; verifica se o usuário entrou com enter
+	BEQ enter			; se sim, pula pra enter
+	JMP houve_entrada
+
+bkspc:
+	; VERIFICA SE PALAVRA NÃO ESTA VAZIA	
+
+	TST num_carac_dig, 		; num_carac_dig <= 0  
+	BLE volta_entrada		; caso sim, volta para entrada do usuario
+					; se não, remove caractere
+
+	; DECREMENTA O NÚMERO DE CARACTERES DIGITADOS
+
+	DEC num_carac_dig		; num_carac_dig--
+	MOV num_carac_dig, R1 		; R1 = num_carac_dig
+
+	; REMOVE CARACTERE DA MEMORIA
+
+	MOV #palavra_dig, R2 		; R2 = end_palavra_dig
+	ADD R1, R2			; i = end_palavra_dig + num_carac_dig
+	AND #255, (R2)			; AND 0000000|11111111 (mascara)
+					; Aplica a mascara no endereco apontado por R2
+					; ou seja, aplica mascara no endereco do ultimo caractere digitado, removendo-o.
+
+	; REMOVE CARACTERE DO DISPLAY
+
+	MOV #putchar, R5
+	CLR R0				; R0 = 0
+	ADD #11, R1			; R1 = num_carac_dig + 11
+	JSR R7, _SISTEMA		; chama a funcao
+
+	JMP poe_cursor			; poe o cursor de volta na ultima posicao dps de remover o carac
+
+enter:					; pula para a comparacao das strings
+	JMP comparacao
+
+
+volta_entrada:				; volta para a entrada de caracteres
+	JMP houve_entrada
+
+add_carac:
+	MOV num_carac_dig, R1		; R1 = num_carac_dig
+	CMP #8, R1			; R1 == 8 (ASCII backspace) ?
+	BEQ volta_entrada		; caso tenha o num_carac_dig chegou a 8, bloqueia a entrada de mais carac, retornado para a funcao de espera de carac. Nesse caso, ele so pode dar bkspc ou enter
+	MOV #palavra_dig, R2 		; R2 = end_palavra_dig
+	ADD R1, R2			; i = end_palavra_dig + num_carac_dig
+	MOV R0, R3			; R3 = caractere digitado (R0)
+	ASL R3				; shifta o byte do algarismo menos significativo pro byte mais significativo (8x)
+	ASL R3
+	ASL R3
+	ASL R3
+	ASL R3
+	ASL R3
+	ASL R3
+	ASL R3			
+	MOV (R2), R4			; R4 = palavra_dig[i]
+	AND #255, R4			; AND 0000000|11111111 (mascara)
+	OR R3, R4			; OR XXXXXXXX|YYYYYYYY (mascara, onde X sao os bits do caractere digitado e Y sao os bits do caractere que sucede palavra_dig[i])
+	MOV R4, (R2)			; palavra_dig[i] = entrada 
+					; Ou seja, move o caractere entrado para a memória
+
+	MOV #putchar, R5		; modo putchar
+	ADD #11, R1			; Inicia a digitacao na 12ª posicao do display
+					; R1 =  11 + num_carac_dig
+					; Isto é, adiciona o numero de caractere digitados no R1
+	JSR R7, _SISTEMA		; chama a funcao
+
+	INC num_carac_dig		; num_carac_dig++
+		
+
+poe_cursor:
+	; VERIFICA SE NUMERO DE CARACTERES É MAIS QUE 8
+	MOV num_carac_dig, R1		; R1 = num_carac_dig
+	CMP #8, R1			; 8 - R1
+	BLE volta_entrada		; R1 >= 8
+	
+	MOV #putchar, R5		; modo putchar
+	MOV #'_', R0			; R0 = '_'
+	ADD #11, R1			; Inicia a digitacao na 12ª posicao do display
+					; R1 =  11 + num_carac_dig
+	JSR R7, _SISTEMA		; chama a funcao
+	
+	; REMOVE POSSIVEL CURSOR
+	; caso tenha um cursor na posicao seguinte, o remove.
+	MOV #putchar, R5		; modo putchar
+	CLR R0				; R0 = caractere nulo
+	INC R1				; Incrementa posicao do display
+	JSR R7, _SISTEMA		; escreve
+	JMP houve_entrada		; volta para o laco
+
+
+comparacao:
+	MOV #palavra_atual, R1		; move endereco da palavra do jogo para R1
+	MOV #palavra_dig, R2		; move endereco da palavra digitada para o R2
+	MOV #4, R3			; move 4 para registrador contador de laco. ou seja, percorre laco 4x
+
+laco_comp:				; laço de comparação, percorre as strings comparando-as
+	CMP (R1)+, (R2)+		; compara os dois bytes de ambas as palavras
+	BNE errou			; caso diferentes, usuário errou
+	SOB R3, laco_comp		; decrementa contador e verifica se laco chegou ao fim
+					; se laco chegou ao fim sem desviar para errou, entao as palavras sao iguais e o usuario acertou
+					; continua no acertou
+acertou:			
+	MOV #certo_msg, R0		; se acertou, move a mensagem de acertou para R0
+	BR escreve_msg			; desvia para o escreve_msg
+
+errou:					; se errou, move a mensagem de errou para R0
+	MOV #errou_msg, R0
+
+escreve_msg:				; Escreve mensagem de fim se acertou ou errou
+	MOV #putmsg, R5			; modo putmsg
+	MOV #11, R1			; R1 = 11. posicao do visor relativo ao num_carac_dig
+	ADD num_carac_dig, R1		; R1 += num_carac_dig
+	JSR R7, _SISTEMA		; chama a funcao
+
+escreve_tempo:				; escreve tempo decorrido na execucao da "partida"
+	MOV #gettime, R5
+	JSR R7, _SISTEMA		; pega tempo final da execucao
+	SUB tempo_inicial, R0		; pega variacao de tempo
+					; R0 = tempo_final (R0) - tempo_inicial
+	MOV R0, delta_tempo		; delta_tempo = R0
+	CMP #1000, R0			; 1000 - variacao_tempo
+	BLE demorou_demais		; se (variacao_tempo >= 1000) -> demorou demais
+
+prepara_posicao_escrita:	
+	MOV num_carac_dig, R4
+	ADD #23, R4			; R4 = caracteres digitados + constantes de display (palavra_atual, " : ", " - certo, ") + 2
+
+desloca_bytes_tempo:
+	; Divide o tempo por 10, para pegar o resto e exibir na tela
+	MOV delta_tempo, R1			; como tempo esta no R0, move-o para R1
+	CLR R0				; R0 = 0. Byte mais signifcativo do R0 = 0
+	MOV #10, R2            		; divisor
+	JSR R7,_S_DIVIDIR		; realiza divisao
+
+	MOV R0, delta_tempo		; salva quociente da div
+
+	; Imprime na tela
+	MOV #putchar, R5		; modo putchar
+	MOV R1, R0			; move o resto da divisao para o R0
+	ADD #'0', R0			; add a constante do ASCII de '0', para representar o números como ASCII
+	MOV R4, R1			; move o endereço a ser escrito no R1
+	DEC R4				; decrementa o R4
+	JSR R7, _SISTEMA		; chama a funcao
+
+	
+	
+	; Testa se tem mais algum algarismo a ser deslocado
+	TST delta_tempo			; quociente == 0?
+	BNE desloca_bytes_tempo		; faz a operacao novamente
+	
+escreve_seg:				; escreve 'seg' dps de exibir o tempo (numero) em segundos
+	MOV #putmsg, R5			; modo putmsg
+	MOV #seg_msg, R0		; move mensagem pro R0
+	MOV num_carac_dig, R1
+	ADD #25, R1			; R4 = caracteres digitados + constantes de display (palavra_atual, " : ", " - certo, ", tempo)
+	JSR R7, _SISTEMA		; escreve msg
+
+	JMP fim_de_jogo			; vai para as mensagens de fim de jogo
+
+; Esta parte foi implementada de uma forma extremamente burra, mas azar.
+demorou_demais:				; Caso o usuario tenha "saído para tomar um café" e esqueceu do jogo, 
+					; limita o tempo até 999 (número máximo possível de ser representado com 3 algarismos)
+	MOV num_carac_dig, R1
+	ADD #21, R1			; R1 = caracteres digitados + constantes de display (palavra_atual, " : ", " - certo, ")
+	
+	MOV #putchar, R5		; modo putchar
+	MOV #'9', R0			; R0 = '9'
+	JSR R7, _SISTEMA		; chama a funcao
+	
+	MOV #putchar, R5
+	INC R1				; escreve '9' uma posicao posterior no visor		
+	JSR R7, _SISTEMA		; chama a funcao
+
+	MOV #putchar, R5		; mesma coisa de antes. eu falei que tava burro
+	INC R1
+	JSR R7, _SISTEMA
+
+
+fim_de_jogo:	
+	JSR R7, _S_ESPERA_ENTER		; espera o usuario apertar enter
+	JSR R7, _S_CLS			; limpa tela
+	
+	MOV #putmsg, R5			; mostra mensagem final
+	MOV #msg_final, R0		; mensagem de novo jogou ou terminar
+	CLR R1				; R1 = 0; cursor na primeira posicao do visor
+	JSR R7, _SISTEMA		; chama a funcao
+					; Como o programa pergunou ao usuario J/j ou T/t,
+espera_j_ou_t:				; espera ele digitar algum desses caracteres
+	MOV #getchar, R5		; R0 = getchar()
+	JSR R7, _SISTEMA
+	
+	CMP R0, #'j'			; R0 == 'j'?
+	BEQ novo_jogo			; se sim, novo jogo
+	CMP R0, #'J'			; R0 == 'J'?
+	BEQ novo_jogo			; idem	
+
+	CMP R0, #'t'			; R0 == 't'?
+	BEQ termina			; Se sim, termina
+	CMP R0, #'T'			; R0 == 'T'?
+	BEQ termina			; idem
+
+	BR espera_j_ou_t 		; se nenhum dos casos for válido, espera de novo
+
+novo_jogo:
+	JMP jogo			; novo jogo :)
+
+termina:
+	JSR R7, _S_CLS			; limpa a tela
+	
+	MOV #putmsg, R5			; poe a mensagem de despedida
+	MOV #msg_final2, R0		; mensagem de despedida
+	CLR R1				; R1 = 0; cursor na primeira posicao do visor
+	JSR R7, _SISTEMA		; chama a funcao
+
+	JSR R7, _S_ESPERA_ENTER		; espera enter
+	JSR R7, _S_CLS			; limpa a tela
+
+fim:					; terminou xD
+	HLT	
+
+
+
+
+
+; -------- SUBROTINAS AUXILIARES PARA O JOGO --------
+org _SUBROTINAS
+;>
+;>
+;> Dividir int. positivo de 32 bits por um de 16 bits
+;>
+;> Chamada da subrotina:
+;>
+;> MOV #msbitsdividendo,R0      	; 16 bits mais significativos do dividendo
+;> MOV #lsbitsdividendo,R1      	; 16 bits menos significativos do dividendo
+;> MOV #divisor,R2              	; divisor (16 bits)
+;> JSR R7,_S_DIVIDIR
+;>
+;> No retorno da subrotina:
+;> - R0 contém o quociente (16 bits)
+;> - R1 contém o resto (16 bits)
+;> - R2 ainda contém o divisor, inalterado (16 bits)
+;> - Códigos de condição:
+;>   V = 1 indica que ocorreu estouro na divisão (quociente não cabe em 16 bits)
+;>   Z = 1 indica que ocorreu uma tentativa de divisão por zero
+;>   Nestes dois casos, R0, R1 e R2 não são alterados pela subrotina
+;>
+_S_DIVIDIR:
+          TST R2               	 	; testa divisor
+          BNE __NAO_ZERO       		; se <> zero, continua
+          CCC V                 	; indica divisao por zero
+          RTS R7               	 	; retorna ao ponto de chamada
+
+__NAO_ZERO:
+          CMP R0,R2             	; testa se dividendo(msb)
+                                	; e' >= que o divisor
+          BCC __INDICA_ESTOURO  	; se for, indicar estouro
+                                	; note: BCC equivale a um
+                                	; BGE para int. positivos
+;>
+          MOV R3,-(R6)         		; salva R3 na pilha
+          MOV R4,-(R6)          	; salva R4 na pilha
+          MOV R5,-(R6)          	; salva R5 na pilha
+          MOV R0,R3             	; copia dividendo para
+          MOV R1,R4             	; R3 e R4 (=q no final)
+          MOV #16,R5            	; inicializa contador
+          ASL R4                	; desloca dividendo p/a
+          ROL R3                	; esquerda e abre espaco
+          BCS __SUBTRAI_DIVISOR 	; p/um bit do quociente
+          CMP R3,R2             	; se n+1 msbits do divid.
+          BCS __BIT_ZERO        	; maiores que divisor (= BLT p/inteiros positivos)
+__SUBTRAI_DIVISOR:
+          SUB R2,R3             	; subtrai divisor e
+          INC R4                	; ajusta bit do quociente
+__BIT_ZERO:
+          SOB R5,16             	; decr. R5; se <>0, repete
+          MOV R3,R1             	; copia resto para R1
+          MOV R4,R0             	; copia quociente p/R0
+          MOV (R6)+,R5          	; restaura
+          MOV (R6)+,R4          	; registradores
+          MOV (R6)+,R3          	; de trabalho
+          CCC V Z               	; limpa cod. de condicao
+          RTS R7                	; retorna ao ponto de chamada
+;>
+__INDICA_ESTOURO:
+          SCC V                 	; indica overflow e nao
+          CCC Z                 	; divisao por zero
+          RTS R7                	; retorna ao ponto de chamada
+
+
+; ---------- SUBROTINA QUE ESPERA O USUARIO APERTAR ENTER -----------------
+_S_ESPERA_ENTER:		
+	MOV #getchar, R5		; R0 = getchar()
+	JSR R7, _SISTEMA
+	CMP #13, R0			; R0 == enter?
+	BNE _S_ESPERA_ENTER		; caso nao tenha apertado enter, espera ele pressionar algo novamente
+	RTS R7				; caso tenha apertado enter, volta ao programa
+
+; ---------- SUBROTINA QUE LIMPA A TELA -----------------
+_S_CLS:
+	MOV #putmsg, R5			; limpa a tela
+	MOV #cls, R0			; Mensagem de espacos vazios
+	CLR R1				; R1 = 0. Cursor na primeira posicao do visor
+	JSR R7, _SISTEMA		; chama funcao
+	RTS R7				; retorna ao ponto de chamada
