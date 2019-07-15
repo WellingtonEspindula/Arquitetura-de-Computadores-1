@@ -1,0 +1,539 @@
+;************************************************************************************
+;
+; TRABALHO 2 - ARQUITETURA DE COMPUTADORES 1
+; UNIVERSIDADE FEDERAL DO RIO GRANDE DO SUL
+;
+; Desenvolvimento do KERNEL - parte 2 do trabalho com o Cesar
+;
+; Autor: Wellington Espindula (wmespindula@inf.ufrgs.br)
+; #: 00302367
+;
+; Versao: 2019.1.0
+;
+; Resumo: O presente trabalho tem por objetivo implementar, na máquina teórica Cesar, o kernel e suas funções,
+; Para tanto, serão desenvolvidas as seguintes funções: kbhit, getchar, gettime, putchar, putmsg, getclock, setclock
+;
+;
+;
+; Areas de memoria:
+;
+;     0000 - 007F (0 - 127)	     _BOOT
+;				     Area de Boot
+;				     Aqui deve ser colocado um desvio para o codigo de
+;                                    inicializacao do sistema de interrupcoes: JMP _RESET
+;
+;     0080 - 00FF (128-255)	     _SISTEMA
+;				     Area de interface da APP com o KERNEL
+;				     Aqui é verificada qual a funcao chamada (valor no R5)
+;				     e feito um desvio para o corpo da funcao correspondente
+;                                    Nota: o corpo das funções do SISTEMA (kbhit, getchar, 
+;                                          putchar, putmsg, gettime, setclock e getclock)
+;                                          deve ser codificado na area do KERNEL.
+;
+;     0100 - 7FFF (256 a 32767)	     _APP
+;				     Programa de Aplicacao (APP)
+;				     Espaço reservado para carga parcial dos aplicativos 
+;                                    para testar o KERNEL e corrigir o trabalho. Não usar.
+;
+;     8000 - FF7F (32768 a 65407)    _KERNEL
+;				     Area para colocar a inicializacao do sistema de 
+;                                    interrupcoes (_RESET), a rotina de atendimento de
+;                                    interrupcoes - ISR (que inclui os os TRATADORES DE 
+;				     INTERRUPCOES do TIMER e do TECLADO), as rotinas que  
+;                                    implementam asfuncoes do SISTEMA e a pilha (base da 
+;                                    pilha = 65408). Aqui tambem devem ser colocadas as 
+;                                    rotinas e variaveis locais usadas pelo KERNEL.
+;
+;     FF80 - FFBF (65408 a 65471)    _IOAREA16
+;				     Area de perifericos, acessada como palavras (16 bits)
+;
+;     FFC0 - FFFF (65472 a 65535)    _IOAREA08
+;				     Area de perifericos, acessada como bytes (8 bits)
+;					
+;************************************************************************************
+;
+; Definicao de constantes correspondentes aos enderecos acima descritos
+;
+_BOOT:		equ	0 	     ; (h0000) boot (desvio para _RESET)
+_SISTEMA:	equ	128	     ; (h0080) area de inicializacao das funcoes do SISTEMA
+_APP:		equ	256	     ; (h0100) area da aplicacao - sera carregada com programas de teste
+_KERNEL:	equ	32768        ; (h8000) area do Kernel
+_IOAREA16:	equ	65408	     ; (hFF80) area de perifericos, acessada como palavras (16 bits)
+_IOAREA08:	equ	65472 	     ; (hFFC0) area de perifericos, acessada como bytes (8 bits)
+_STACK:		equ	_IOAREA16    ; base da pilha na area do kernel
+
+;
+;==============================================================================
+;	Boot Startup
+;	NAO ALTERAR ESSA AREA
+;==============================================================================
+	org		_BOOT
+	jmp		_RESET       ; vetor de reset
+	dw		2019         ; versao = 2019.1.0
+	db		1
+	db		0
+
+
+
+
+;	
+;==============================================================================
+;	Nesta area ficara o codigo que identifica qual a funcao do SISTEMA
+;	que foi chamada (atraves de um JSR R7,_SISTEMA), analisando o conteudo
+;	do registrador R5 e desviando para o codigo da funcao correspondente, 
+;	que deverá ser codificado na area do KERNEL (adiante)
+;==============================================================================
+	org	_SISTEMA
+
+	CMP #KBHIT, R5		; Verifica se R5 é KBHIT
+	BEQ kbhit_sr		; Se sim, chama subrotina de KBHIT
+	
+	CMP #GETCHAR, R5	; Verifica se R5 é GETCHAR
+	BEQ getchar_sr		; Se sim, chama subrotina de GETCHAR
+
+	CMP #GETTIME, R5	; Verifica se R5 é GETCHAR
+	BEQ gettime_sr		; Se sim, chama subrotina de GETCHAR
+
+	CMP #PUTCHAR, R5	; Verifica se R5 é PUTCHAR
+	BEQ putchar_sr		; Se sim, chama subrotina de PUTCHAR
+	
+	CMP #PUTMSG, R5		; Verifica se R5 é PUTMSG
+	BEQ putmsg_sr		; Se sim, chama subrotina de PUTMSG
+
+	CMP #GETCLOCK, R5	; Verifica se R5 é GETCLOCK
+	BEQ getclock_sr		; Se sim, chama subrotina de GETCLOCK
+
+	CMP #SETCLOCK, R5	; Verifica se R5 é SETCLOCK
+	BEQ setclock_sr		; Se sim, chama subrotina de SETCLOCK
+
+
+kbhit_sr:
+	JSR R7, _S_KBHIT
+	RTS R7
+
+getchar_sr:
+	JSR R7, _S_GETCHAR
+	RTS R7
+
+gettime_sr:
+	JSR R7, _S_GETTIME
+	RTS R7
+
+putchar_sr:
+	JSR R7, _S_PUTCHAR
+	RTS R7
+
+putmsg_sr:
+	JSR R7, _S_PUTMSG
+	RTS R7
+
+getclock_sr:
+	JSR R7, _S_GETCLOCK
+	RTS R7
+
+setclock_sr:
+	JSR R7, _S_SETCLOCK
+	RTS R7	
+
+
+
+
+;	
+;==============================================================================
+;	O programa de aplicacao sera carregado aqui (enderecos 256 a 32767)
+;	NADA deve ser codificado neste espaco, que estara reservado para fazer
+;	a carga parcial dos programas usados para testar o KERNEL
+;==============================================================================
+
+
+
+	org	_APP
+;
+;
+;
+;
+;
+; > RESERVADO PARA O USUÁRIO
+;
+;
+;
+;
+;
+;
+;
+;
+;
+
+
+;	
+;==============================================================================
+;	Area para o kernel
+;    	Inicialização do sistema de interrupcoes (_RESET)
+;	Implementacao dos tratadores de interrupcao (_ISR)
+;	Implementacao das funcoes do SISTEMA
+;	A pilha ocupara os enderecos mais altos desta area (abaixo de 65408)
+;==============================================================================
+	org	_KERNEL
+;==============================================================================
+;	Codigo de RESET (BOOT) do processador/interrupcao
+;==============================================================================
+_RESET:					
+	CLR R0				; Limpa os registradores
+	CLR R1
+	CLR R2
+	CLR R3
+	CLR R4
+	CLR R5
+	
+	CLR INTE			; Desabilita o sistema de interrupcoes
+	MOV #_STACK, R6			; Inicializa o stack pointer (SP = R6)
+
+					; Inicializa as variaveis internas usadas pelo sistema de interrupcoes (IVET, INTE, etc.)
+	MOV #_ISR, IVET			; indica o endereço do início da subrotina de interrupção para o vetor de interrupção (IVET)
+	OR #INTS_TIM, INTE		; indica que o será habilitada a interrupção de tempo
+	OR #INTS_TEC, INTE		; indica que o será habilitada a interrupção de teclado	
+					
+					; Inicializa as variaveis internas do kernel
+	MOV #-1, TECLA			; TECLA recebe -1,valor usado para indicar que não tem caractere no buffer
+	CLR SEGUNDOS			; Limpa contagem de segundos
+	CLR HORA     			; Limpa contagem de hora
+	CLR MINUTO              	; Limpa contagem de minuto
+	CLR SEGUNDO			; Limpa contagem de segundo
+
+	CLR TECST			; Inicializa o teclado zerando o byte de estado (TECST, endereco 65498)
+
+	MOV #250, TIMDT			; Inicializa o timer para interromper a cada 250 milissegundos
+	
+	JSR R7, _S_CLS			; Limpa o visor usando a subrotina de limpeza de visor
+
+	OR #INTS_ENB, INTE		; Habilita interrupcoes
+
+	JMP _APP			; Retorna para o programa de aplicacao
+
+
+
+
+;==============================================================================
+;	Implementacao das funcoes do SISTEMA
+;     	KBHIT, GETCHAR, PUTCHAR, PUTMSG, GETTIME, GETCLOCK e SETCLOCK
+;	Nota: cada funcao deve terminar com um RTS R7
+;==============================================================================
+;
+; Constantes com os códigos das funções do SISTEMA
+KBHIT:    equ 0
+GETCHAR:  equ 1
+GETTIME:  equ 2
+PUTCHAR:  equ 3
+PUTMSG:   equ 4
+GETCLOCK: equ 5
+SETCLOCK: equ 6
+;
+
+
+; Endereços para salvar registradores
+reg_0:		dw 0
+reg_1:		dw 0
+reg_2:		dw 0
+reg_3:		dw 0
+reg_4:		dw 0
+
+
+_S_KBHIT:				; SUBROTINA DE KBHIT
+	CMP #-1, TECLA			; Verifica se tem algum caractere em TECLA
+	BEQ n_digitada			; Caso sim, retorna 1 no R0
+	BNE digitada			; Caso não, retorna 0 no R0
+n_digitada:
+	MOV #0, R0			; R0 = 0
+	JMP retorna
+digitada:
+	MOV #1, R0			; R0 = 1
+	JMP retorna			
+
+
+_S_GETCHAR:				; SUBROTINA DE GETCHAR
+	CMP #-1, TECLA			; Verifica se tem algum caractere em TECLA
+	BEQ _S_GETCHAR			; Caso não, volta para a verificação de tecla 
+	MOV TECLA, R0			; Caso sim, copia a tecla para o R0. R0 = TECLA
+	MOV #-1, TECLA			; Limpa o "buffer". R0 = -1
+	JMP retorna
+
+
+_S_GETTIME:				; SUBROTINA DE GETTIME	
+	MOV SEGUNDOS, R0		; R0 = SEGUNDOS
+	JMP retorna
+
+_S_PUTCHAR:				; SUBROTINA DE PUTCHAR
+
+	MOV R1, reg_1			; salva R1
+
+valida_pos:				; Valida entrada da posicao no R1
+	; ((posicao_do_visor < 0) || (posicao_do_visor > 35)) -> fim_putchar
+	CMP R1, #0			; (R1 < 0) -> fim_putchar
+	BLT fim_putchar			; 
+	
+	CMP R1, #35			; (R1  > 35) -> fim_putchar
+	BGT fim_putchar			;
+
+escreve_caractere:			; Caso a posicao informada esteja entre 0-35, então escreve caractere no visor
+	ADD #VISOR, R1			; R1 = end_visor + pos_visor
+	MOV R0, (R1)			; Copia o caractere informado em R0 para o visor na posicao informada
+
+fim_putchar:				; Retorna
+	MOV reg_1, R1			; restaura R1
+	JMP retorna
+		
+_S_PUTMSG:				; SUBROTINA DE PUTMSG
+	
+	MOV R0, reg_0			; salva registradores
+	MOV R1, reg_1
+	MOV R3, reg_3
+
+valida_posicao:
+	; ((posicao_do_visor < 0) || (posicao_do_visor > 35)) -> fim_putmsg
+	CMP R1, #0			; (R1 < 0) -> fim_putmsg
+	BLT fim_putmsg			;
+	
+	CMP R1, #35			; (R1  > 35) -> fim_putmsgr
+	BGT fim_putmsg			;
+
+					; Caso a validação tenha sido efetiva, escreve mensagem no visor
+inicio_putmsg:				; Inicializa as variaveis para o loop de escrita de mensagem
+	ADD #VISOR, R1			; R1 = end_visor + pos_visor
+	DEC R0				; Decrementa R0 para usar um endereço anterior ao da mensagem, utilizando só os byte menos significativo
+
+loop_putmsg:				; Loop de escrita de mensagem
+	MOV (R0), R3			; R3 recebe o valor do byte apontado por R0
+	AND #255, R3			; Máscara que descarta o byte mais significativo
+	
+	TST R3				; Verifica se o valor a ser inserido é 0
+	BEQ fim_putmsg			; Caso sim, encerra o putmsg
+
+	MOV R3, (R1)			; Caso não, copia o caractere para o visor na posicao indicada
+
+	INC R0				; Incrementa o R0 para pegar o próximo caractere
+
+	CMP R1, #65535			; Verifica se já chegou ao fim do visor
+	BGE volta_incio_visor		; Se sim, reseta o R1 para o início do visor, fazendo uma escrita "circular"
+	INC R1				; Incrementa o R1, fazendo que o próximo caractere seja escrito em uma posicao à frente no visor
+	JMP loop_putmsg			; Volta para o loop de escrita "caractere por caractere"
+	
+volta_incio_visor:			; Caso em que a mensagem excedeu o limite do visor
+	MOV #VISOR, R1			; R1 = end_visor. Isto é, R1 vai receber o valor da posição 0 do visor
+	JMP loop_putmsg			; Retorna para o loop
+
+fim_putmsg:				; Fim do putmsg
+	MOV reg_0, R0			; restaura registradores
+	MOV reg_1, R1
+	MOV reg_3, R3
+	JMP retorna			
+
+_S_GETCLOCK:				; SUBROTINA DE GETCLOCK
+	MOV HORA, R0			; R0 = HORA
+	MOV MINUTO, R1			; R1 = MINUTO
+	MOV SEGUNDO, R2			; R2 = SEGUNDO
+	JMP retorna			; Retorna...
+
+_S_SETCLOCK:				; SUBROTINA DE SETCLOCK
+testa_hora:				; Valida a hora entrada
+	; (HORA < 0) || (HORA > 23) -> entrada_incosistente
+	CMP R0, #0			; (R0 < 0) -> entrada_inconsistente
+	BLT entrada_inconsistente	;
+	
+	CMP R0, #23			; (R0 > 23) -> entrada_inconsistente
+	BGT entrada_inconsistente	;
+
+testa_minuto:
+	; (MINUTO < 0) || (MINUTO > 59) -> entrada_incosistente
+	CMP R1, #0			; (R1 < 0) -> entrada_inconsistente
+	BLT entrada_inconsistente	;
+	
+	CMP R1, #59			; (R1 > 59) -> entrada_inconsistente
+	BGT entrada_inconsistente	;
+
+testa_segundo:
+	; (SEGUNDO >= 0) && (SEGUNDO <= 59)
+	CMP R2, #0			; (R2 < 0) -> entrada_inconsistente
+	BLT entrada_inconsistente	;
+	
+	CMP R2, #59			; (R2 > 59) -> entrada_inconsistente
+	BGT entrada_inconsistente	;
+
+seta_tempo:				; Se o tempo informado estiver correto, seta as variáveis tempo com as informações entradas
+	MOV R0, HORA			; HORA = R0
+	MOV R1, MINUTO			; MINUTO = R1
+	MOV R2, SEGUNDO			; SEGUNDO = R2
+	CLR R0				; R0 = 0. Indica que a modificação do relógio foi bem sucedida
+	JMP retorna			; Retorna
+
+entrada_inconsistente:			; Caso a entrada dos dados tenha sido inconsistente
+	MOV #-1, R0			; R0 = -1, informando que houve erro na entrada dos dados
+	JMP retorna			; Retorna
+
+retorna:
+	RTS R7
+
+
+
+
+;
+;==============================================================================
+;	Subrotinas auxiliares
+;==============================================================================
+;
+valor_r0:	dw 0
+_S_CLS:					; SUBROTINA CLS (LIMPA O VISOR)
+	MOV R0, valor_r0		; Salva o valor do R0
+	MOV #VISOR, R0			; R0 = end_visor
+	ADD #35, R0			; R0 armazena a última posicao do visor
+	
+loop_cls:				; loop de limpeza
+	CLR (R0)			; posicao apontada por R0 recebe 0
+	DEC R0				; decrementa o endereço do visor apontado por R0
+	CMP R0, #65500			; Verifica se chegou ao fim (no caso, início do visor)
+	BGE loop_cls			; Caso não, volta ao loop
+
+fim_cls:				; Caso sim, restaura o R0 e retorna da subrotina
+	MOV valor_r0, R0
+	RTS R7
+	
+	
+
+
+;
+;==============================================================================
+;	Rotinas de Tratamento das interrupcoes
+;==============================================================================
+;
+; Constantes ("mascaras") para teste e alteracao dos bits de INTS na ISR
+;
+INTS_ENB:	equ	128   ; (0000000010000000) - testar bit 7
+INTS_TIM:	equ	1     ; (0000000000000001) - testar bit 0
+nINTS_TIM:	equ	HFFFE ; (1111111111111110) - zerar bit 0
+INTS_TEC:	equ	2     ; (0000000000000010) - testar bit 1
+nINTS_TEC:	equ	HFFFD ; (1111111111111101) - zerar bit 1
+;
+; variáveis de comunicação com as funções do SISTEMA
+TECLA:		DW	0     ; código ASCII da tecla digitada (ou -1 se nenhuma)
+SEGUNDOS:	DW	0     ; segundos decorridos desde a inicialização (0 a 65535)
+HORA:           DW      0     ; hora do relógio (0 a 23)
+MINUTO:         DW      0     ; minuto da hora do relógio (0 a 59)
+SEGUNDO:        DW      0     ; segundo da hora do relógio (0 a 59)
+
+
+; variáveis para guardar registradores que estavam sendo usados
+_R0:		DW	0
+_R1:		DW	0
+_R2:		DW	0
+_R3:		DW	0
+_R4:		DW	0
+_R5:		DW	0	
+_CONTA_TEMPO:	DW	4		; variavel que contará de 4 à 0 para percorrer 4 tempos de 250 milisegundos 
+					; e, por conseguinte, incrementar as variáveis de segundo
+
+
+
+_ISR:					; SUBROTINA DE INTERRUPÇÃO
+
+	MOV R0, _R0			; Salva valores dos registradores
+	MOV R1, _R1
+	MOV R2, _R2
+	MOV R3, _R3
+	MOV R4, _R4
+	MOV R5, _R5
+
+verifica_interrupcao_tempo:		; Verifica se houve interrupção de tempo
+	MOV INTS, R0			; Move INTS para o R0 
+	AND #INTS_TIM, R0 		; Faz máscara para selecionar o bit do timer
+
+	TST R0				; Testa o bit
+	BNE houve_interrupcao_tempo		; Se for 1, houve interrupção de tempo
+	BEQ verifica_interrupcao_teclado	; Se for 0, verifica se houve interrupção de teclado
+
+houve_interrupcao_tempo:		; Caso houve interrupção de tempo
+	DEC _CONTA_TEMPO		; Decrementa o _CONTA_TEMPO	
+	TST _CONTA_TEMPO		; Verifica se chegou a 0
+	BEQ acrescenta_segundos		; Se sim, incrementa segundos
+	BNE zera_timer_ints		; Se não, restaura o bite do teclado do INTS e retorna
+	
+acrescenta_segundos:			; Incrementa segundos
+	INC SEGUNDOS			; Incrementa SEGUNDOS
+reinicia_conta_tempo:			; Reinicia a contabilização do tempo
+	MOV #4, _CONTA_TEMPO		; _CONTA_TEMPO = 4
+	
+acrescenta_segundo:			; Incrementa segundo e valida o tempo
+	INC SEGUNDO			; Incrementa SEGUNDO
+
+	CMP SEGUNDO, #60		; (SEGUNDO >= 60) -> acrescenta_minuto
+	BGE acrescenta_minuto		;
+	BLT zera_timer_ints		; Caso o segundo esteja entre 0-59, vai para procedimentos finais de tempo
+
+acrescenta_minuto:			; Incrementa minuto e valida o tempo
+	CLR SEGUNDO			; Nesse caso, zera o SEGUNDO	
+	INC MINUTO			; Incrementa o minuto
+	
+	CMP MINUTO, #60			; (MINUTO >= 60) -> acrescenta_hora
+	BGE acrescenta_hora		;
+	BLT zera_timer_ints		; Caso o minuto esteja entre 0-59, vai para procedimentos finais de tempo
+
+acrescenta_hora:			; Incrementa hora e valida o tempo
+	CLR MINUTO			; Nesse caso, zera o MINUTO
+	INC HORA			; Incrementa HORA
+
+	CMP HORA, #24			; (HORA >= 24) -> zera_tempo
+	BGE zera_tempo			;
+	BLT zera_timer_ints		; Caso a hora esteja entre 0-23, vai para procedimentos finais de tempo
+
+zera_tempo:				; Zera o tempo
+	CLR HORA     
+	CLR MINUTO              
+	CLR SEGUNDO
+
+zera_timer_ints:			; Zera o flag de interrupção de tempo do INTS
+	AND #nINTS_TIM, INTS
+
+verifica_interrupcao_teclado:
+	MOV INTS, R0			; Move INTS para o R0 
+	AND #INTS_TEC, R0 		; Faz máscara para selecionar o bit do teclado
+
+	TST R0				; Testa o bit
+	BNE houve_interrupcao_teclado	; Se for 1, houve interrupção de teclado
+	BEQ retorna_interrupcao		; Se for 0, retorna da interrupção
+
+houve_interrupcao_teclado:
+	MOV TECDT, TECLA		; Move tecla digitada para a variavel tecla
+	CLR TECST			; Limpa o buffer de estado de teclado
+
+zera_teclado_ints:			; Zera o flag de interrupção de tempo do INTS
+	AND #nINTS_TEC, INTS
+
+retorna_interrupcao:			; Restaura registradores e retorna da interrupção
+	MOV _R0, R0
+	MOV _R1, R1
+	MOV _R2, R2
+	MOV _R3, R3
+	MOV _R4, R4
+	MOV _R5, R5
+	RTI
+
+; FIM DO CÓDIGO DO SISTEMA
+;
+; >>>>>>>>> INSERIR AQUI AS SUB-ROTINAS DA BIBCESAR V16, SE FOR USAR <<<<<<<<<
+;
+;------------------------------------------------------------------------------
+;	Area reservada para os perifericos
+;------------------------------------------------------------------------------
+;
+; Acesso em 16 bits
+	org	_IOAREA16
+	daw	[31]
+IVET:	dw	0		; Vetor de interrupcao
+;
+; Acesso em 8 bits
+	org	_IOAREA08
+	dab	[23]
+TIMDT:	db	0		; Registro de programacao do timer
+INTS:	db	0		; INTERRUPT STATUS: IP x x x . x x IPStec IPStim
+INTE:	db	0		; INTERRUPT ENABLE: IE x x x . x x IEStec IEStim
+TECST:	db	0		; Status do teclado
+TECDT:	db	0		; Dado do teclado
+VISOR:	dab	[36]		; Portas de acesso ao visor
